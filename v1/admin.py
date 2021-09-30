@@ -4,6 +4,7 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import UserChangeForm, UserCreationForm
 
 from .models import User
+from .models import daily
 
 class UserAdmin(BaseUserAdmin):
     form = UserChangeForm
@@ -12,8 +13,9 @@ class UserAdmin(BaseUserAdmin):
     list_display = ('email', 'username')
     list_filter = ('email', 'username')
     fieldsets = (
-        (None, {"fields": ('email', 'password', 'is_staff', 'is_superuser')}),
+        (None, {"fields": ('email', 'password', 'profileImg', 'is_staff', 'is_superuser', 'is_active', 'id')}),
         ('Personal Info', {'fields': ('username',)}),
+        ('Daily works', {'fields': ('dailyInfo',)}),
     )
 
     add_fieldsets = (
@@ -27,4 +29,5 @@ class UserAdmin(BaseUserAdmin):
     filter_horizontal = ()
 
 admin.site.register(User, UserAdmin)
+admin.site.register(daily)
 admin.site.unregister(Group)

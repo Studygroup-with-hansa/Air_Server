@@ -1,7 +1,13 @@
+from django.utils.timezone import now
 from django.db import models
 from django.contrib.auth.models import AbstractUser, PermissionsMixin, BaseUserManager
 from django.utils import timezone
+from .config import config as cfg
 
+class daily(models.Model):
+    userEmail = models.EmailField(verbose_name='Table Owner', primary_key=True, null=False, default='')
+    # date = models.DateField(default=now, verbose_name='Date', null=False)
+    # goal = models.IntegerField(default=0, verbose_name='Daily goal (sec)', blank=False, null=False)
 
 class UserManager(BaseUserManager):
     use_in_migrations = True
@@ -33,9 +39,13 @@ class UserManager(BaseUserManager):
 
 class User(AbstractUser):
     objects = UserManager()
+    id = models.AutoField(primary_key=True)
+    style = models.CharField(max_length=10, verbose_name='user\'s style', null=True)
     email = models.EmailField(verbose_name='email', max_length=255, unique=True)
-    username = models.CharField(max_length=8, verbose_name='Username')
+    username = models.CharField(max_length=8, verbose_name='user name')
+    profileImg = models.URLField(verbose_name='profile Image URL', default=cfg.DEFAULT_PROFILE_IMG)
     is_active = models.BooleanField(default=True)
+    dailyInfo = models.OneToOneField(daily, on_delete=models.CASCADE, null=True, verbose_name='Information of Daily')
 
     # EMAIL_FIELD = 'email'
     USERNAME_FIELD = 'email'
