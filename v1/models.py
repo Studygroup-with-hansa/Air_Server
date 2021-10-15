@@ -4,29 +4,25 @@ from django.contrib.auth.models import AbstractUser, PermissionsMixin, BaseUserM
 from django.utils import timezone
 from .config import config as cfg
 
-class daily(models.Model):
-    userEmail = models.EmailField(verbose_name='Table Owner', primary_key=True, null=False, default='')
-    # date = models.DateField(default=now, verbose_name='Date', null=False)
-    # goal = models.IntegerField(default=0, verbose_name='Daily goal (sec)', blank=False, null=False)
 
 class UserManager(BaseUserManager):
     use_in_migrations = True
 
-    def _create_user(self, email, password=None, **extra_fields):
+    def _create_user(self, email, password=None, username='익명', **extra_fields):
         if not email:
             raise ValueError('No Email.')
         email = self.normalize_email(email)
-        user = self.model(email=email, password=password, **extra_fields)
+        user = self.model(email=email, password=password, username=username, **extra_fields)
         user.set_password(password)
         user.save(using=self.db)
         return user
 
-    def create_user(self, email, password=None, **extra_fields):
+    def create_user(self, email, password=None, username='익명', **extra_fields):
         extra_fields.setdefault('is_staff', False)
         extra_fields.setdefault('is_superuser', False)
-        return self._create_user(email, password, **extra_fields)
+        return self._create_user(email, password, username, **extra_fields)
 
-    def create_superuser(self, email, password, **extra_fields):
+    def create_superuser(self, email, password, username='Admin', **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
 
@@ -35,21 +31,42 @@ class UserManager(BaseUserManager):
         if extra_fields.get('is_superuser') is not True:
             raise ValueError("Administrator must be 'is_superuser' is True")
 
-        return self._create_user(email, password, **extra_fields)
+        return self._create_user(email, password, username, **extra_fields)
+
+
+class subject(models.Model):
+    date = models.ForeignKey("Daily", related_name='daily', on_delete=models.CASCADE, null=True, verbose_name='Date info', db_column="date")
+    title = models.CharField(default='기타', verbose_name='Subject Name', null=False, primary_key=True, max_length=15)
+    time = models.IntegerField(default=0, verbose_name='Study time - second', null=False)
+    color = models.CharField(default=cfg.DEFAULT_SUBJECT_COLOR, verbose_name="Subject's personal Color", null=False,
+                             max_length=7)
+
+class Daily(models.Model):
+    userInfo = models.ForeignKey("User", related_name='user', on_delete=models.CASCADE, null=True, verbose_name='Information of Daily', db_column="userEmail")
+    date = models.DateField(default=now, verbose_name='Date', null=False, primary_key=True)
+    goal = models.IntegerField(default=0, verbose_name='Daily goal (sec)', blank=False, null=False)
+
+
+class emailAuth(models.Model):
+    mail = models.EmailField(verbose_name='Mail Sender', max_length=255, unique=True, primary_key=True)
+    authCode = models.CharField(verbose_name='Auth', max_length=8)
+    reqeustTime = models.DateTimeField(verbose_name='RequestedTime', default=timezone.now)
+
 
 class User(AbstractUser):
     objects = UserManager()
-    id = models.AutoField(primary_key=True)
+    # id = models.AutoField(primary_key=True, null=False)
     style = models.CharField(max_length=10, verbose_name='user\'s style', null=True)
-    email = models.EmailField(verbose_name='email', max_length=255, unique=True)
-    username = models.CharField(max_length=8, verbose_name='user name')
-    profileImg = models.URLField(verbose_name='profile Image URL', default=cfg.DEFAULT_PROFILE_IMG)
+    email = models.EmailField(verbose_name='email', max_length=255, unique=True, primary_key=True)
+    username = models.CharField(max_length=8, verbose_name='user name', default='익명', null=False)
+    profileImgURL = models.URLField(verbose_name='profile Image URL', default=cfg.DEFAULT_PROFILE_IMG)
     is_active = models.BooleanField(default=True)
-    dailyInfo = models.OneToOneField(daily, on_delete=models.CASCADE, null=True, verbose_name='Information of Daily')
+    isTimerRunning = models.BooleanField(default=False, null=False, verbose_name='Timer running checker Flag')
+    passwd = models.CharField(verbose_name='tempUserPasswd', max_length=100)
 
     # EMAIL_FIELD = 'email'
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = []
+    REQUIRED_FIELDS = ['username']
     date_joined = models.DateTimeField('date joined', default=timezone.now)
 
     def __str__(self):

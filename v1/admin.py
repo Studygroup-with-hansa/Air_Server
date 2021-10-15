@@ -4,18 +4,20 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import UserChangeForm, UserCreationForm
 
 from .models import User
-from .models import daily
+from .models import Daily
 
 class UserAdmin(BaseUserAdmin):
     form = UserChangeForm
     add_form = UserCreationForm
 
-    list_display = ('email', 'username')
-    list_filter = ('email', 'username')
+    list_display = ('email', 'username', 'isTimerRunning')
+    list_filter = ('email', 'username', 'isTimerRunning')
     fieldsets = (
-        (None, {"fields": ('email', 'password', 'profileImg', 'is_staff', 'is_superuser', 'is_active', 'id')}),
-        ('Personal Info', {'fields': ('username',)}),
-        ('Daily works', {'fields': ('dailyInfo',)}),
+        (None, {"fields": ('email', 'password', 'profileImgURL')}),
+        ('Personal Info', {'fields': ('username', 'date_joined')}),
+        ('Status Info', {'fields': ('isTimerRunning',)}),
+        # ('Daily works', {'fields': ('dailyInfo',)}),
+        ('Permissions', {'fields': ('is_staff', 'is_superuser', 'is_active')})
     )
 
     add_fieldsets = (
@@ -28,6 +30,22 @@ class UserAdmin(BaseUserAdmin):
     ordering = ('email',)
     filter_horizontal = ()
 
+class DailyAdmin(admin.ModelAdmin):
+    list_display = ('userInfo', 'date')
+    list_filter = ('userInfo', 'date')
+    fieldsets = (
+        (None, {"fields": ('userInfo',)}),
+        ('Daily Information')
+    )
+
+# class SubjectAdmin(admin.ModelAdmin):
+#     list_display = ('date', 'title')
+#     list_filter = ('title')
+#     fieldsets = (
+#
+#     )
+
 admin.site.register(User, UserAdmin)
-admin.site.register(daily)
+admin.site.register(Daily)
+# admin.site.register(SubjectAdmin)
 admin.site.unregister(Group)
