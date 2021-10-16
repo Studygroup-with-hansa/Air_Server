@@ -77,8 +77,20 @@ class requestEmailAuth(APIView):
 class modifyUserEmail(APIView):
     def put(self, request):
         try:
-            newName = request.data['name']
+            newMail = request.data['name']
         except (KeyError, ValueError):
             return JsonResponse(BAD_REQUEST_400(message='Some Values are missing'), status=400)
+        try:
+            userModel = request.user
+            userModel.email = newMail
+            userModel.save()
+            JsonResponse(OK_200(), status=200)
+        except IntegrityError:
+            return JsonResponse(BAD_REQUEST_400(message='Given email already Exists'), status=400)
+        except (KeyError, ValueError):
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing'), status=400)
+        return JsonResponse(CUSTOM_CODE(status=500, message='Unknown Server Error Accorded'), status=500)
+
+
 
 
