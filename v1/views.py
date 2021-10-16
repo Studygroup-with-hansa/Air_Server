@@ -107,3 +107,17 @@ class modifyUserName(APIView):
         except (KeyError, ValueError):
             return JsonResponse(BAD_REQUEST_400(message='Some Values are missing'), status=400)
         return JsonResponse(CUSTOM_CODE(status=500, message='Unknown Server Error Accorded'), status=500)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class getUserBasicInfo(APIView):
+    def get(self, request):
+        try:
+            userModel = request.user
+            email = userModel.email
+            name = userModel.username
+            JsonResponse(OK_200(data={"email": email, "name": name}))
+        except Exception as E:
+            print(E)
+        return JsonResponse(CUSTOM_CODE(status=500, message='Unknown Server Error Accorded'), status=500)
+
