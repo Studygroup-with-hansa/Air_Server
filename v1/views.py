@@ -24,13 +24,15 @@ class requestEmailAuth(APIView):
             User.objects.get(email=email)
         except ObjectDoesNotExist:
             code = randCode(8).upper()
-            send(code, email)
             authModel = emailAuth(
                 mail=email,
                 authCode=code
             )
+            send(code, email)
             authModel.save()
             return JsonResponse(OK_200(data={"isEmailExist": False, "emailSent": True}), status=200)
+        except (KeyError, ValueError):
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
 
         code = randCode(8).upper()
         send(code, email)
@@ -53,10 +55,10 @@ class requestEmailAuth(APIView):
         if authCode == authCode_req:
             pass
         else:
-            return JsonResponse(CUSTOM_CODE(status=401, message='invalid auth code', data={"token": ""}))
+            return JsonResponse(CUSTOM_CODE(status=401, message='invalid auth code', data={"token": ""}), status=401)
         validTimeChecker = timezone.now() - timedelta(minutes=5)
         if authTime < validTimeChecker:
-            return JsonResponse(CUSTOM_CODE(status=410, message='time limit exceeded(5min)', data={"token": ""}))
+            return JsonResponse(CUSTOM_CODE(status=410, message='time limit exceeded (5min)', data={"token": ""}), status=410)
 
         userPasswd = randCode(60)
         userModel = User.objects.create_user(
@@ -75,21 +77,48 @@ class requestEmailAuth(APIView):
 
 @method_decorator(csrf_exempt, name='dispatch')
 class modifyUserEmail(APIView):
+    def post(self, request):
+        try:
+            email = request.data['email']
+        except (KeyError, ValueError):
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            User.objects.get(email=email)
+        except ObjectDoesNotExist:
+            try:
+                userModel = request.user
+                authCode = randCode(8).upper()
+                userModel.newMail = email
+                userModel.authCode = authCode
+                userModel.requestTime = timezone.now()
+                userModel.save()
+                send(authCode, email)
+                return JsonResponse(OK_200(data={"isEmailExist": False, "emailSent": True}), status=200)
+            except (KeyError, ValueError):
+                return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        return JsonResponse(BAD_REQUEST_400(message='Given email already Exists', data={"isEmailExist": True, "emailSent": False}), status=400)
+
     def put(self, request):
         try:
-            newMail = request.data['name']
+            authCode = request.data['auth'].upper()
         except (KeyError, ValueError):
             return JsonResponse(BAD_REQUEST_400(message='Some Values are missing'), status=400)
+        userModel = request.user
+        if userModel.authCode == authCode:
+            pass
+        else:
+            return JsonResponse(CUSTOM_CODE(status=401, message='invalid auth code', data={}), status=401)
+        validTimeChecker = timezone.now() - timedelta(minutes=5)
+        if userModel.requestTime < validTimeChecker:
+            return JsonResponse(CUSTOM_CODE(status=410, message='time limit exceeded (5min)', data={}), status=410)
+        userModel.delete()
+        userModel.email = userModel.newMail
+        userModel.save()
         try:
-            userModel = request.user
-            userModel.email = newMail
-            userModel.save()
-            JsonResponse(OK_200(), status=200)
+            token = Token.objects.create(user=userModel)
         except IntegrityError:
-            return JsonResponse(BAD_REQUEST_400(message='Given email already Exists'), status=400)
-        except (KeyError, ValueError):
-            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing'), status=400)
-        return JsonResponse(CUSTOM_CODE(status=500, message='Unknown Server Error Accorded'), status=500)
+            token = Token.objects.get(user=userModel)
+        return JsonResponse(OK_200(data={"token": token.key}), status=200)
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -103,10 +132,12 @@ class modifyUserName(APIView):
             userModel = request.user
             userModel.username = newName
             userModel.save()
-            JsonResponse(OK_200(), status=200)
+            return JsonResponse(OK_200(), status=200)
         except (KeyError, ValueError):
             return JsonResponse(BAD_REQUEST_400(message='Some Values are missing'), status=400)
-        return JsonResponse(CUSTOM_CODE(status=500, message='Unknown Server Error Accorded'), status=500)
+        except Exception as E:
+            print(E)
+            return JsonResponse(CUSTOM_CODE(status=500, message='Unknown Server Error Accorded'), status=500)
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -116,8 +147,8 @@ class getUserBasicInfo(APIView):
             userModel = request.user
             email = userModel.email
             name = userModel.username
-            JsonResponse(OK_200(data={"email": email, "name": name}))
+            return JsonResponse(OK_200(data={"email": email, "name": name}))
         except Exception as E:
             print(E)
-        return JsonResponse(CUSTOM_CODE(status=500, message='Unknown Server Error Accorded'), status=500)
+            return JsonResponse(CUSTOM_CODE(status=500, message='Unknown Server Error Accorded'), status=500)
 

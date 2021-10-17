@@ -64,6 +64,11 @@ class User(AbstractUser):
     isTimerRunning = models.BooleanField(default=False, null=False, verbose_name='Timer running checker Flag')
     passwd = models.CharField(verbose_name='tempUserPasswd', max_length=100)
 
+    newMail = models.EmailField(verbose_name='New Mail', max_length=255, null=True)
+    authCode = models.CharField(verbose_name='New Mail registrations auth field', max_length=8, null=True)
+    requestTime = models.DateTimeField(verbose_name='New Mail RequestedTime', null=True)
+
+
     # EMAIL_FIELD = 'email'
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
