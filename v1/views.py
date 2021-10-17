@@ -160,4 +160,9 @@ class checkTokenValidation(APIView):
         return JsonResponse(CUSTOM_CODE(status=200, data={}, message='Valid Token'), status=200)
 
 
-
+@method_decorator(csrf_exempt, name='dispatch')
+class alterUser(APIView):
+    def delete(self, request):
+        userModel = request.user
+        userModel.delete()
+        return JsonResponse(OK_200(data={}), status=200)
