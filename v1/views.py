@@ -152,3 +152,12 @@ class getUserBasicInfo(APIView):
             print(E)
             return JsonResponse(CUSTOM_CODE(status=500, message='Unknown Server Error Accorded'), status=500)
 
+
+@method_decorator(csrf_exempt, name='dispatch')
+class checkTokenValidation(APIView):
+    def get(self, request):
+        userModel = request.user
+        return JsonResponse(CUSTOM_CODE(status=200, data={}, message='Valid Token'), status=200)
+
+
+
