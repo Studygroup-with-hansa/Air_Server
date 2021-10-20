@@ -166,3 +166,23 @@ class alterUser(APIView):
         userModel = request.user
         userModel.delete()
         return JsonResponse(OK_200(data={}), status=200)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class makeSubject(APIView):
+    def post(self, request):
+        try:
+            subjTitle = request.data['title']
+            subjColor = request.data['color']
+        except (KeyError, ValueError):
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            userSubject.objects.get(user=request.user, title=subjTitle)
+            return JsonResponse(BAD_REQUEST_400(message="Same subject is already exists", data={}), status=400)
+        except ObjectDoesNotExist:
+            subjectModel = userSubject(
+                userInfo=request.user,
+                title=subjTitle,
+                color=subjColor
+            )
+            subjectModel.save()
