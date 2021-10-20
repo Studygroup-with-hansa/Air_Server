@@ -36,14 +36,14 @@ class UserManager(BaseUserManager):
 
 class userSubject(models.Model):
     # date = models.ForeignKey("Daily", related_name='daily', on_delete=models.CASCADE, null=True, verbose_name='Date info', db_column="date")
-    user = models.ForeignKey("User", related_name='user', on_delete=models.CASCADE, null=True, verbose_name='User info', db_column="user", primary_key=True)
+    user = models.ForeignKey("User", related_name='user_subject', on_delete=models.CASCADE, null=True, verbose_name='User info', db_column="user")
     title = models.CharField(default='기타', verbose_name='Subject Name', null=False, max_length=15)
     color = models.CharField(default=cfg.DEFAULT_SUBJECT_COLOR, verbose_name="Subject's personal Color", null=False, max_length=7)
     # time = models.IntegerField(default=0, verbose_name='Study time - second', null=False)
     # startTime = models.DateTimeField(verbose_name='LastTimerStartedTime', null=True)
 
 class Daily(models.Model):
-    userInfo = models.ForeignKey("User", related_name='user', on_delete=models.CASCADE, null=True, verbose_name='Information of Daily', db_column="userEmail")
+    userInfo = models.ForeignKey("User", related_name='user_daily', on_delete=models.CASCADE, null=True, verbose_name='Information of Daily', db_column="userEmail")
     date = models.DateField(default=now, verbose_name='Date', null=False, primary_key=True)
     goal = models.IntegerField(default=0, verbose_name='Daily goal (sec)', blank=False, null=False)
 
@@ -63,7 +63,7 @@ class User(AbstractUser):
     profileImgURL = models.URLField(verbose_name='profile Image URL', default=cfg.DEFAULT_PROFILE_IMG)
     is_active = models.BooleanField(default=True)
     isTimerRunning = models.BooleanField(default=False, null=False, verbose_name='Timer running checker Flag')
-    timerRunningSubject = models.OneToOneField(userSubject, null=True, verbose_name='Timer Running Subject')
+    timerRunningSubject = models.OneToOneField(userSubject, default=None, null=True, verbose_name='Timer Running Subject', on_delete=models.SET_DEFAULT, related_name='timerRunningSubject')
     passwd = models.CharField(verbose_name='tempUserPasswd', max_length=100)
 
     newMail = models.EmailField(verbose_name='New Mail', max_length=255, null=True)

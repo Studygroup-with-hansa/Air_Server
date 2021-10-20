@@ -9,4 +9,5 @@ urlpatterns = [
     path('user/info/manage/basic/', views.getUserBasicInfo.as_view(), name='index'),
     path('user/info/manage/basic/checktoken/', views.checkTokenValidation.as_view(), name='index'),
     path('user/info/manage/', views.alterUser.as_view(), name='index'),
+    path('user/data/subject/manage/', views.subject.as_view(), name='index'),
 ]

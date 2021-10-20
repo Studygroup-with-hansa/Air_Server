@@ -5,9 +5,10 @@ from .services.sendSMTP import send
 from datetime import datetime, timedelta
 
 from django.db.models import Q
+from django.http import QueryDict
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError
-from django.http import HttpRequest, JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from rest_framework.authtoken.models import Token
@@ -169,7 +170,7 @@ class alterUser(APIView):
 
 
 @method_decorator(csrf_exempt, name='dispatch')
-class makeSubject(APIView):
+class subject(APIView):
     def post(self, request):
         try:
             subjTitle = request.data['title']
@@ -181,8 +182,22 @@ class makeSubject(APIView):
             return JsonResponse(BAD_REQUEST_400(message="Same subject is already exists", data={}), status=400)
         except ObjectDoesNotExist:
             subjectModel = userSubject(
-                userInfo=request.user,
+                user=request.user,
                 title=subjTitle,
                 color=subjColor
             )
             subjectModel.save()
+            return JsonResponse(OK_200(data={}), status=200)
+
+
+    def delete(self, request):
+        try:
+            subjTitle = request.query_params['title']
+        except (KeyError, ValueError):
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            subjectDB = userSubject.objects.get(user=request.user, title=subjTitle)
+            subjectDB.delete()
+            return JsonResponse(OK_200(data={}), status=200)
+        except ObjectDoesNotExist:
+            return JsonResponse(BAD_REQUEST_400(message="Subject "+subjTitle+" is not exists", data={}), status=400)
