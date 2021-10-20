@@ -201,3 +201,6 @@ class subject(APIView):
             return JsonResponse(OK_200(data={}), status=200)
         except ObjectDoesNotExist:
             return JsonResponse(BAD_REQUEST_400(message="Subject "+subjTitle+" is not exists", data={}), status=400)
+        except Exception as E:
+            print(E)
+            return JsonResponse(CUSTOM_CODE(status=500, message='Unknown Server Error Accorded', data={}), status=500)
