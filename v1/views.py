@@ -204,3 +204,27 @@ class subject(APIView):
         except Exception as E:
             print(E)
             return JsonResponse(CUSTOM_CODE(status=500, message='Unknown Server Error Accorded', data={}), status=500)
+
+
+    def put(self, request):
+        try:
+            subjectTitle = request.query_params['title']
+        except (KeyError, ValueError):
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            subjectDB = userSubject.objects.get(user=request.user, title=subjectTitle)
+        except ObjectDoesNotExist:
+            return JsonResponse(BAD_REQUEST_400(message="Subject " + subjectTitle + " is not exists", data={}), status=400)
+        try:
+            title_new = request.query_params['title_new']
+            subjectDB.title = title_new
+        except (KeyError, ValueError):
+            pass
+        try:
+            color_new = request.query_params['color']
+            subjectDB.color = color_new
+        except (KeyError, ValueError):
+            pass
+        subjectDB.save()
+        return JsonResponse(OK_200(data={}))
+
