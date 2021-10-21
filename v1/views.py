@@ -228,3 +228,23 @@ class subject(APIView):
         subjectDB.save()
         return JsonResponse(OK_200(data={}))
 
+
+@method_decorator(csrf_exempt, name='dispatch')
+class startTimer(APIView):
+    def post(self, request):
+        try:
+            subjectTitle = request.data['title']
+        except (KeyError, ValueError):
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        userDB = request.user
+        if userDB.is_active:
+            return JsonResponse(CUSTOM_CODE(message="Timer is already running", status=409, data={}), status=409)
+        try:
+            runningSubject = userSubject.objects.get(user=userDB, title=subjectTitle)
+        except ObjectDoesNotExist:
+            return JsonResponse(BAD_REQUEST_400(message="Subject " + subjectTitle + " is not exists", data={}), status=400)
+        userDB.is_active = True
+        userDB.timerRunningSubject = runningSubject
+        userDB.timerStartTime = timezone.now()
+        userDB.save()
+        return JsonResponse(OK_200(data={}), status=200)

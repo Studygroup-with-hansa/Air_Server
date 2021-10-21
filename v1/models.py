@@ -62,9 +62,11 @@ class User(AbstractUser):
     username = models.CharField(max_length=8, verbose_name='user name', default='익명', null=False)
     profileImgURL = models.URLField(verbose_name='profile Image URL', default=cfg.DEFAULT_PROFILE_IMG)
     is_active = models.BooleanField(default=True)
+    passwd = models.CharField(verbose_name='tempUserPasswd', max_length=100)
+
     isTimerRunning = models.BooleanField(default=False, null=False, verbose_name='Timer running checker Flag')
     timerRunningSubject = models.OneToOneField(userSubject, default=None, null=True, verbose_name='Timer Running Subject', on_delete=models.SET_DEFAULT, related_name='timerRunningSubject')
-    passwd = models.CharField(verbose_name='tempUserPasswd', max_length=100)
+    timerStartTime = models.DateTimeField(null=True, verbose_name='Current Timer StartedTime')
 
     newMail = models.EmailField(verbose_name='New Mail', max_length=255, null=True)
     authCode = models.CharField(verbose_name='New Mail registrations auth field', max_length=8, null=True)
