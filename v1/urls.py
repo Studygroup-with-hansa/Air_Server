@@ -11,4 +11,5 @@ urlpatterns = [
     path('user/info/manage/', views.alterUser.as_view(), name='index'),
     path('user/data/subject/manage/', views.subject.as_view(), name='index'),
     path('user/timer/start/', views.startTimer.as_view(), name='index'),
+    path('user/timer/stop/', views.stopTimer.as_view(), name='index'),
 ]

@@ -36,6 +36,7 @@ class UserManager(BaseUserManager):
 
 class userSubject(models.Model):
     # date = models.ForeignKey("Daily", related_name='daily', on_delete=models.CASCADE, null=True, verbose_name='Date info', db_column="date")
+    primaryKey = models.BigAutoField(verbose_name='pk', db_column='pk', primary_key=True)
     user = models.ForeignKey("User", related_name='user_subject', on_delete=models.CASCADE, null=True, verbose_name='User info', db_column="user")
     title = models.CharField(default='기타', verbose_name='Subject Name', null=False, max_length=15)
     color = models.CharField(default=cfg.DEFAULT_SUBJECT_COLOR, verbose_name="Subject's personal Color", null=False, max_length=7)

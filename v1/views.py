@@ -229,6 +229,7 @@ class subject(APIView):
         return JsonResponse(OK_200(data={}))
 
 
+# PLEASE ADD SUBJECT SYNC
 @method_decorator(csrf_exempt, name='dispatch')
 class startTimer(APIView):
     def post(self, request):
@@ -237,14 +238,30 @@ class startTimer(APIView):
         except (KeyError, ValueError):
             return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
         userDB = request.user
-        if userDB.is_active:
+        if userDB.isTimerRunning:
             return JsonResponse(CUSTOM_CODE(message="Timer is already running", status=409, data={}), status=409)
         try:
             runningSubject = userSubject.objects.get(user=userDB, title=subjectTitle)
         except ObjectDoesNotExist:
             return JsonResponse(BAD_REQUEST_400(message="Subject " + subjectTitle + " is not exists", data={}), status=400)
-        userDB.is_active = True
+        userDB.isTimerRunning = True
         userDB.timerRunningSubject = runningSubject
         userDB.timerStartTime = timezone.now()
         userDB.save()
         return JsonResponse(OK_200(data={}), status=200)
+
+
+# PLEASE ADD SUBJECT SYNC
+@method_decorator(csrf_exempt, name='dispatch')
+class stopTimer(APIView):
+    def post(self, request):
+        try:
+            userDB = request.user
+            timeProgress = timezone.now() - request.user.timerStartTime
+            userDB.isTimerRunning = False
+            userDB.timerRunningSubject = None
+            userDB.timerStartTime = None
+            userDB.save()
+            return JsonResponse(OK_200(data={"timeest": int(timeProgress.total_seconds())}), status=200)
+        except (ObjectDoesNotExist, TypeError):
+            return JsonResponse(CUSTOM_CODE(message="Timer is already stopped", data={}, status=409), status=409)
