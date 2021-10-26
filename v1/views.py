@@ -238,12 +238,44 @@ class startTimer(APIView):
         except (KeyError, ValueError):
             return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
         userDB = request.user
+        if not userDB.is_authenticated or userDB.is_anonymous:
+            return JsonResponse(INVALID_TOKEN(), 401)
         if userDB.isTimerRunning:
             return JsonResponse(CUSTOM_CODE(message="Timer is already running", status=409, data={}), status=409)
         try:
             runningSubject = userSubject.objects.get(user=userDB, title=subjectTitle)
         except ObjectDoesNotExist:
             return JsonResponse(BAD_REQUEST_400(message="Subject " + subjectTitle + " is not exists", data={}), status=400)
+        try:
+            daily = Daily.objects.get(userInfo=userDB, date=timezone.now())
+        except ObjectDoesNotExist:
+            daily = Daily(
+                userInfo=userDB,
+                date=timezone.now(),
+                goal=userDB.targetTime
+            )
+            daily.save()
+            todaySubject = dailySubject(
+                dateAndUser=daily,
+                title=runningSubject.title,
+                color=runningSubject.color,
+                time=0
+            )
+            todaySubject.save()
+        try:
+            todaySubject = todaySubject
+            pass
+        except NameError:
+            try:
+                todaySubject = dailySubject.objects.get(dateAndUser=daily, date=timezone.now())
+            except ObjectDoesNotExist:
+                todaySubject = dailySubject(
+                    dateAndUser=daily,
+                    title=runningSubject.title,
+                    color=runningSubject.color,
+                    time=0
+                )
+                todaySubject.save()
         userDB.isTimerRunning = True
         userDB.timerRunningSubject = runningSubject
         userDB.timerStartTime = timezone.now()

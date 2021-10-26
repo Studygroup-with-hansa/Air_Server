@@ -11,3 +11,9 @@ def OK_200(data={}):
 
 def BAD_REQUEST_400(data={}, message='Bad request'):
     return CUSTOM_CODE(status=400, message=message, data=data)
+
+def INVALID_TOKEN():
+    STATUS_FORM = {
+        "detail": "Invalid token."
+    }
+    return STATUS_FORM

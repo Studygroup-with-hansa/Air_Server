@@ -43,6 +43,15 @@ class userSubject(models.Model):
     # time = models.IntegerField(default=0, verbose_name='Study time - second', null=False)
     # startTime = models.DateTimeField(verbose_name='LastTimerStartedTime', null=True)
 
+
+class dailySubject(models.Model):
+    primaryKey = models.BigAutoField(verbose_name='pk', db_column='pk', primary_key=True)
+    dateAndUser = models.ForeignKey("Daily", related_name='dateAndUser', db_column="dailyObject", on_delete=models.CASCADE)
+    title = models.CharField(default='기타', verbose_name='Subject Name', null=False, max_length=15)
+    color = models.CharField(default=cfg.DEFAULT_SUBJECT_COLOR, max_length=7, verbose_name="Subject's personal Color", null=False)
+    time = models.IntegerField(default=0, verbose_name="StudyTime - second", null=False)
+
+
 class Daily(models.Model):
     userInfo = models.ForeignKey("User", related_name='user_daily', on_delete=models.CASCADE, null=True, verbose_name='Information of Daily', db_column="userEmail")
     date = models.DateField(default=now, verbose_name='Date', null=False, primary_key=True)
@@ -64,6 +73,8 @@ class User(AbstractUser):
     profileImgURL = models.URLField(verbose_name='profile Image URL', default=cfg.DEFAULT_PROFILE_IMG)
     is_active = models.BooleanField(default=True)
     passwd = models.CharField(verbose_name='tempUserPasswd', max_length=100)
+
+    targetTime = models.IntegerField(default=0, null=False)
 
     isTimerRunning = models.BooleanField(default=False, null=False, verbose_name='Timer running checker Flag')
     timerRunningSubject = models.OneToOneField(userSubject, default=None, null=True, verbose_name='Timer Running Subject', on_delete=models.SET_DEFAULT, related_name='timerRunningSubject')
