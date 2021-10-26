@@ -276,6 +276,8 @@ class startTimer(APIView):
                     time=0
                 )
                 todaySubject.save()
+            userDB.timerRunningSubject = todaySubject
+            userDB.save()
         userDB.isTimerRunning = True
         userDB.timerRunningSubject = runningSubject
         userDB.timerStartTime = timezone.now()
