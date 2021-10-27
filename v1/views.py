@@ -229,7 +229,6 @@ class subject(APIView):
         return JsonResponse(OK_200(data={}))
 
 
-# PLEASE ADD SUBJECT SYNC
 @method_decorator(csrf_exempt, name='dispatch')
 class startTimer(APIView):
     def post(self, request):
@@ -285,17 +284,21 @@ class startTimer(APIView):
         return JsonResponse(OK_200(data={}), status=200)
 
 
-# PLEASE ADD SUBJECT SYNC
 @method_decorator(csrf_exempt, name='dispatch')
 class stopTimer(APIView):
     def post(self, request):
         try:
             userDB = request.user
             timeProgress = timezone.now() - request.user.timerStartTime
+            daily = Daily.objects.get(userInfo=userDB, date=timezone.now())
+            _runningSubject = userSubject.objects.get(primaryKey=userDB.timerRunningSubject_id)
+            runningSubject = dailySubject.objects.get(dateAndUser=daily, title=_runningSubject.title)
+            runningSubject.time = int(timeProgress.total_seconds())
+            runningSubject.save()
             userDB.isTimerRunning = False
             userDB.timerRunningSubject = None
             userDB.timerStartTime = None
             userDB.save()
-            return JsonResponse(OK_200(data={"timeest": int(timeProgress.total_seconds())}), status=200)
+            return JsonResponse(OK_200(data={}), status=200)
         except (ObjectDoesNotExist, TypeError):
             return JsonResponse(CUSTOM_CODE(message="Timer is already stopped", data={}, status=409), status=409)
