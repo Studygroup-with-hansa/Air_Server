@@ -230,6 +230,24 @@ class subject(APIView):
 
 
 @method_decorator(csrf_exempt, name='dispatch')
+class getUserSubject(APIView):
+    def get(self, request):
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(), 400)
+        userSubjects = userSubject.objects.filter(user=request.user)
+        userSubjects = list(userSubjects)
+        returnValueData = {"subject": [], "goal": 0}
+        returnValueData["goal"] = request.user.targetTime
+        for _userSubject in userSubjects:
+            data = {
+                "title": str(_userSubject.title),
+                "color": str(_userSubject.color)
+            }
+            returnValueData["subject"].append(data)
+        return JsonResponse(OK_200(data=returnValueData), status=200)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
 class startTimer(APIView):
     def post(self, request):
         try:
