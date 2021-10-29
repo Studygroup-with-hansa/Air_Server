@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from .services.returnStatusForm import *
 from .services.randomCharCreator import createRandomChar as randCode
 from .services.sendSMTP import send
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 
 from django.db.models import Q
 from django.http import QueryDict
@@ -230,10 +230,42 @@ class subject(APIView):
 
 
 @method_decorator(csrf_exempt, name='dispatch')
+class getUserSubjectHistory(APIView):
+    def post(self, request):
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            _date = request.data['date']
+            _date = _date.split('-')
+            try:
+                year = int(_date[0])
+                month = int(_date[1])
+                day = int(_date[2])
+                _date = date(year, month, day)
+            except (IndexError, TypeError):
+                return JsonResponse(BAD_REQUEST_400(message='invalid date given', data={}), status=400)
+        except (KeyError, ValueError):
+            _date = datetime.now()
+        daily = Daily.objects.get(userInfo=request.user, date=_date)
+        subjectHistory = dailySubject.objects.filter(dateAndUser=daily)
+        subjectHistory = list(subjectHistory)
+        returnValue = {"totalTime": 0, "subject": [], "goal": daily.goal}
+        for _subjectHistory in subjectHistory:
+            returnValue["totalTime"] = returnValue["totalTime"] + _subjectHistory.time
+            subjectDict = {
+                "title": _subjectHistory.title,
+                "time": _subjectHistory.time,
+                "color": _subjectHistory.color
+            }
+            returnValue["subject"].append(subjectDict)
+        return JsonResponse(OK_200(data=returnValue), status=200)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
 class getUserSubject(APIView):
     def get(self, request):
         if not request.user.is_authenticated or request.user.is_anonymous:
-            return JsonResponse(BAD_REQUEST_400(), 400)
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing'), 400)
         userSubjects = userSubject.objects.filter(user=request.user)
         userSubjects = list(userSubjects)
         returnValueData = {"subject": [], "goal": 0}
