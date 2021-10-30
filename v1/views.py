@@ -292,6 +292,11 @@ class targetTime(APIView):
         request.user.save()
         return JsonResponse(OK_200(data={}), status=200)
 
+    def get(self, request):
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing'), status=400)
+        return JsonResponse(CUSTOM_CODE(status=200, message="OK", data={"targetTime": int(request.user.targetTime)}), status=200)
+
 
 @method_decorator(csrf_exempt, name='dispatch')
 class startTimer(APIView):
