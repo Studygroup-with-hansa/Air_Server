@@ -265,7 +265,7 @@ class getUserSubjectHistory(APIView):
 class getUserSubject(APIView):
     def get(self, request):
         if not request.user.is_authenticated or request.user.is_anonymous:
-            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing'), 400)
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing'), status=400)
         userSubjects = userSubject.objects.filter(user=request.user)
         userSubjects = list(userSubjects)
         returnValueData = {"subject": [], "goal": 0}
@@ -277,6 +277,20 @@ class getUserSubject(APIView):
             }
             returnValueData["subject"].append(data)
         return JsonResponse(OK_200(data=returnValueData), status=200)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class targetTime(APIView):
+    def post(self, request):
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing'), status=400)
+        try:
+            time = request.data['targetTime']
+        except (KeyError, ValueError):
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing'), status=400)
+        request.user.targetTime = int(time)
+        request.user.save()
+        return JsonResponse(OK_200(data={}), status=200)
 
 
 @method_decorator(csrf_exempt, name='dispatch')
