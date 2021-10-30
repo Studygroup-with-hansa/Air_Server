@@ -251,13 +251,14 @@ class getUserSubjectHistory(APIView):
         subjectHistory = list(subjectHistory)
         returnValue = {"totalTime": 0, "subject": [], "goal": daily.goal}
         for _subjectHistory in subjectHistory:
-            returnValue["totalTime"] = returnValue["totalTime"] + _subjectHistory.time
-            subjectDict = {
-                "title": _subjectHistory.title,
-                "time": _subjectHistory.time,
-                "color": _subjectHistory.color
-            }
-            returnValue["subject"].append(subjectDict)
+            if _subjectHistory.time:
+                returnValue["totalTime"] = returnValue["totalTime"] + _subjectHistory.time
+                subjectDict = {
+                    "title": _subjectHistory.title,
+                    "time": _subjectHistory.time,
+                    "color": _subjectHistory.color
+                }
+                returnValue["subject"].append(subjectDict)
         return JsonResponse(OK_200(data=returnValue), status=200)
 
 
