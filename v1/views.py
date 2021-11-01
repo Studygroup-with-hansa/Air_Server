@@ -361,7 +361,8 @@ class todoList_API(APIView):
             _todoList = todoList.objects.get(subject=todoSubject)
             _todoList.todo = str(todo)
             _todoList.save()
-            return JsonResponse(OK_200(data={}), status=200)
+            pk = _todoList.primaryKey
+            return JsonResponse(OK_200(data={"pk": pk}), status=200)
         except ObjectDoesNotExist:
             _todoList = todoList(
                 subject=todoSubject,
@@ -369,7 +370,8 @@ class todoList_API(APIView):
                 todo=str(todo)
             )
             _todoList.save()
-            return JsonResponse(OK_200(data={}), status=200)
+            pk = _todoList.primaryKey
+            return JsonResponse(OK_200(data={"pk": pk}), status=200)
 
 
 @method_decorator(csrf_exempt, name='dispatch')
