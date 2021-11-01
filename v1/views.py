@@ -373,6 +373,26 @@ class todoList_API(APIView):
             pk = _todoList.primaryKey
             return JsonResponse(OK_200(data={"pk": pk}), status=200)
 
+    def put(self, request):
+        try:
+            pk = request.query_params['pk']
+        except (KeyError, ValueError):
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            bodyParam = json.loads(request.body)
+            todo = bodyParam["todo"]
+        except (KeyError, ValueError, json.JSONDecodeError, TypeError):
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            todoObj = todoList.objects.get(primaryKey=pk)
+        except ObjectDoesNotExist:
+            return JsonResponse(BAD_REQUEST_400(message="There's no checklist", data={}), status=400)
+        if not todoObj.subject.dateAndUser.userInfo == request.user:
+            return JsonResponse(BAD_REQUEST_400(message="There's no checklist", data={}), status=400)
+        todoObj.todo = str(todo)
+        todoObj.save()
+        return JsonResponse(OK_200(data={}), status=200)
+
 
 @method_decorator(csrf_exempt, name='dispatch')
 class startTimer(APIView):
