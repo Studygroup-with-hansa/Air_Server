@@ -1,3 +1,5 @@
+import json
+
 from rest_framework.views import APIView
 from .services.returnStatusForm import *
 from .services.randomCharCreator import createRandomChar as randCode
@@ -297,6 +299,77 @@ class targetTime(APIView):
         if not request.user.is_authenticated or request.user.is_anonymous:
             return JsonResponse(BAD_REQUEST_400(message='Some Values are missing'), status=400)
         return JsonResponse(CUSTOM_CODE(status=200, message="OK", data={"targetTime": int(request.user.targetTime)}), status=200)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class todoList_API(APIView):
+    def post(self, request):
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing'), status=400)
+        try:
+            subjectTitle = request.data['subject']
+            todo = request.data['todo']
+        except (KeyError, ValueError):
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing'), status=400)
+        try:
+            _date = request.data['date']
+            _date = _date.split('-')
+            try:
+                year = int(_date[0])
+                month = int(_date[1])
+                day = int(_date[2])
+                _date = date(year, month, day)
+            except (IndexError, TypeError):
+                return JsonResponse(BAD_REQUEST_400(message='invalid date given', data={}), status=400)
+            today = datetime.now()
+            if _date.year == today.year and _date.day == today.day:
+                isToday = True
+            else:
+                isToday = False
+        except (KeyError, ValueError):
+            _date = datetime.now()
+            isToday = True
+        if isToday:
+            try:
+                todoSubject = userSubject.objects.get(user=request.user, title=subjectTitle)
+            except ObjectDoesNotExist:
+                return JsonResponse(BAD_REQUEST_400(message="Subject " + subjectTitle + " is not exists", data={}), status=400)
+            try:
+                todoDate = Daily.objects.get(userInfo=request.user, date=datetime.now())
+                todoSubject = dailySubject.objects.get(dateAndUser=todoDate, title=subjectTitle)
+            except ObjectDoesNotExist:
+                todoDate = Daily(
+                    userInfo=request.user,
+                    date=datetime.today(),
+                    goal=request.user.targetTime
+                )
+                todoDate.save()
+                todoSubject = dailySubject(
+                    dateAndUser=todoDate,
+                    title=todoSubject.title,
+                    color=todoSubject.color,
+                    time=0
+                )
+                todoSubject.save()
+        else:
+            try:
+                todoDate = Daily.objects.get(userInfo=request.user, date=_date)
+                todoSubject = dailySubject.objects.get(dateAndUser=todoDate, title=subjectTitle)
+            except ObjectDoesNotExist:
+                return JsonResponse(BAD_REQUEST_400(message="Subject " + subjectTitle + " is not exists", data={}), status=400)
+        try:
+            _todoList = todoList.objects.get(subject=todoSubject)
+            _todoList.todo = str(todo)
+            _todoList.save()
+            return JsonResponse(OK_200(data={}), status=200)
+        except ObjectDoesNotExist:
+            _todoList = todoList(
+                subject=todoSubject,
+                isItDone=False,
+                todo=str(todo)
+            )
+            _todoList.save()
+            return JsonResponse(OK_200(data={}), status=200)
 
 
 @method_decorator(csrf_exempt, name='dispatch')

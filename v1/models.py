@@ -52,10 +52,18 @@ class dailySubject(models.Model):
     time = models.IntegerField(default=0, verbose_name="StudyTime - second", null=False)
 
 
+class todoList(models.Model):
+    primaryKey = models.BigAutoField(verbose_name='pk', db_column='pk', primary_key=True)
+    subject = models.ForeignKey("dailySubject", related_name='subject', on_delete=models.CASCADE)
+    isItDone = models.BooleanField(default=False, null=False)
+    todo = models.TextField(default='', null=False)
+
+
 class Daily(models.Model):
     userInfo = models.ForeignKey("User", related_name='user_daily', on_delete=models.CASCADE, null=True, verbose_name='Information of Daily', db_column="userEmail")
     date = models.DateField(default=now, verbose_name='Date', null=False, primary_key=True)
     goal = models.IntegerField(default=0, verbose_name='Daily goal (sec)', blank=False, null=False)
+    memo = models.TextField(default='', null=False)
 
 
 class emailAuth(models.Model):
