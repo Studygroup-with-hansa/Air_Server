@@ -336,7 +336,6 @@ class todoList_API(APIView):
                 return JsonResponse(BAD_REQUEST_400(message="Subject " + subjectTitle + " is not exists", data={}), status=400)
             try:
                 todoDate = Daily.objects.get(userInfo=request.user, date=datetime.now())
-                todoSubject = dailySubject.objects.get(dateAndUser=todoDate, title=subjectTitle)
             except ObjectDoesNotExist:
                 todoDate = Daily(
                     userInfo=request.user,
@@ -344,6 +343,9 @@ class todoList_API(APIView):
                     goal=request.user.targetTime
                 )
                 todoDate.save()
+            try:
+                todoSubject = dailySubject.objects.get(dateAndUser=todoDate, title=subjectTitle)
+            except ObjectDoesNotExist:
                 todoSubject = dailySubject(
                     dateAndUser=todoDate,
                     title=todoSubject.title,
