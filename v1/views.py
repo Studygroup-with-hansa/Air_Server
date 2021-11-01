@@ -442,6 +442,28 @@ class todoList_API(APIView):
 
 
 @method_decorator(csrf_exempt, name='dispatch')
+class todoListState(APIView):
+    def put(self, request):
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            pk = request.query_params['pk']
+        except (KeyError, ValueError):
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            todoObj = todoList.objects.get(primaryKey=pk)
+        except ObjectDoesNotExist:
+            return JsonResponse(BAD_REQUEST_400(message="There's no checklist", data={}), status=400)
+        if not todoObj.subject.dateAndUser.userInfo == request.user:
+            return JsonResponse(BAD_REQUEST_400(message="There's no checklist", data={}), status=400)
+        if todoObj.isItDone:
+            todoObj.isItDone = False
+        else:
+            todoObj.isItDone = True
+        todoObj.save()
+
+
+@method_decorator(csrf_exempt, name='dispatch')
 class startTimer(APIView):
     def post(self, request):
         try:
