@@ -396,6 +396,50 @@ class todoList_API(APIView):
         todoObj.save()
         return JsonResponse(OK_200(data={}), status=200)
 
+    def get(self, request):
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            _date = request.data['date']
+            _date = _date.split('-')
+            try:
+                year = int(_date[0])
+                month = int(_date[1])
+                day = int(_date[2])
+                _date = date(year, month, day)
+            except (IndexError, TypeError):
+                return JsonResponse(BAD_REQUEST_400(message='invalid date given', data={}), status=400)
+        except (KeyError, ValueError):
+            _date = datetime.now()
+        returnValue = {
+            "date": str(_date.strftime("%Y-%m-%d")),
+            "memo": "",
+            "subjects": [],
+        }
+        try:
+            _day = Daily.objects.get(userInfo=request.user, date=_date)
+            subjects = dailySubject.objects.filter(dateAndUser=_day)
+            subjects = list(subjects)
+        except ObjectDoesNotExist:
+            return JsonResponse(OK_200(data=returnValue), status=200)
+        returnValue["memo"] = _day.memo
+        for subj in subjects:
+            data = {
+                "subject": subj.title,
+                "todoList": []
+            }
+            todo = todoList.objects.filter(subject=subj)
+            todo = list(todo)
+            for _todo in todo:
+                todo_data = {
+                    "pk": _todo.pk,
+                    "isitDone": _todo.isItDone,
+                    "todo": _todo.todo
+                }
+                data["todoList"].append(todo_data)
+            returnValue["subjects"].append(data)
+        return JsonResponse(OK_200(data=returnValue), status=200)
+
 
 @method_decorator(csrf_exempt, name='dispatch')
 class startTimer(APIView):
