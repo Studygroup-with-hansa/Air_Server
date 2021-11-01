@@ -358,8 +358,7 @@ class todoList_API(APIView):
             except ObjectDoesNotExist:
                 return JsonResponse(BAD_REQUEST_400(message="Subject " + subjectTitle + " is not exists", data={}), status=400)
         try:
-            _todoList = todoList.objects.get(subject=todoSubject)
-            _todoList.todo = str(todo)
+            _todoList = todoList(subject=todoSubject, todo=str(todo))
             _todoList.save()
             pk = _todoList.primaryKey
             return JsonResponse(OK_200(data={"pk": pk}), status=200)
