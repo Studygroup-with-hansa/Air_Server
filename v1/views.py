@@ -373,6 +373,8 @@ class todoList_API(APIView):
             return JsonResponse(OK_200(data={"pk": pk}), status=200)
 
     def put(self, request):
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
         try:
             pk = request.query_params['pk']
         except (KeyError, ValueError):
