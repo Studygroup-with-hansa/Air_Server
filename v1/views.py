@@ -336,7 +336,6 @@ class todoList_API(APIView):
                 return JsonResponse(BAD_REQUEST_400(message="Subject " + subjectTitle + " is not exists", data={}), status=400)
             try:
                 todoDate = Daily.objects.get(userInfo=request.user, date=datetime.now())
-                todoSubject = dailySubject.objects.get(dateAndUser=todoDate, title=subjectTitle)
             except ObjectDoesNotExist:
                 todoDate = Daily(
                     userInfo=request.user,
@@ -344,6 +343,9 @@ class todoList_API(APIView):
                     goal=request.user.targetTime
                 )
                 todoDate.save()
+            try:
+                todoSubject = dailySubject.objects.get(dateAndUser=todoDate, title=subjectTitle)
+            except ObjectDoesNotExist:
                 todoSubject = dailySubject(
                     dateAndUser=todoDate,
                     title=todoSubject.title,
@@ -358,10 +360,10 @@ class todoList_API(APIView):
             except ObjectDoesNotExist:
                 return JsonResponse(BAD_REQUEST_400(message="Subject " + subjectTitle + " is not exists", data={}), status=400)
         try:
-            _todoList = todoList.objects.get(subject=todoSubject)
-            _todoList.todo = str(todo)
+            _todoList = todoList(subject=todoSubject, todo=str(todo))
             _todoList.save()
-            return JsonResponse(OK_200(data={}), status=200)
+            pk = _todoList.primaryKey
+            return JsonResponse(OK_200(data={"pk": pk}), status=200)
         except ObjectDoesNotExist:
             _todoList = todoList(
                 subject=todoSubject,
@@ -369,7 +371,74 @@ class todoList_API(APIView):
                 todo=str(todo)
             )
             _todoList.save()
-            return JsonResponse(OK_200(data={}), status=200)
+            pk = _todoList.primaryKey
+            return JsonResponse(OK_200(data={"pk": pk}), status=200)
+
+    def put(self, request):
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            pk = request.query_params['pk']
+        except (KeyError, ValueError):
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            bodyParam = json.loads(request.body)
+            todo = bodyParam["todo"]
+        except (KeyError, ValueError, json.JSONDecodeError, TypeError):
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            todoObj = todoList.objects.get(primaryKey=pk)
+        except ObjectDoesNotExist:
+            return JsonResponse(BAD_REQUEST_400(message="There's no checklist", data={}), status=400)
+        if not todoObj.subject.dateAndUser.userInfo == request.user:
+            return JsonResponse(BAD_REQUEST_400(message="There's no checklist", data={}), status=400)
+        todoObj.todo = str(todo)
+        todoObj.save()
+        return JsonResponse(OK_200(data={}), status=200)
+
+    def get(self, request):
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            _date = request.data['date']
+            _date = _date.split('-')
+            try:
+                year = int(_date[0])
+                month = int(_date[1])
+                day = int(_date[2])
+                _date = date(year, month, day)
+            except (IndexError, TypeError):
+                return JsonResponse(BAD_REQUEST_400(message='invalid date given', data={}), status=400)
+        except (KeyError, ValueError):
+            _date = datetime.now()
+        returnValue = {
+            "date": str(_date.strftime("%Y-%m-%d")),
+            "memo": "",
+            "subjects": [],
+        }
+        try:
+            _day = Daily.objects.get(userInfo=request.user, date=_date)
+            subjects = dailySubject.objects.filter(dateAndUser=_day)
+            subjects = list(subjects)
+        except ObjectDoesNotExist:
+            return JsonResponse(OK_200(data=returnValue), status=200)
+        returnValue["memo"] = _day.memo
+        for subj in subjects:
+            data = {
+                "subject": subj.title,
+                "todoList": []
+            }
+            todo = todoList.objects.filter(subject=subj)
+            todo = list(todo)
+            for _todo in todo:
+                todo_data = {
+                    "pk": _todo.pk,
+                    "isitDone": _todo.isItDone,
+                    "todo": _todo.todo
+                }
+                data["todoList"].append(todo_data)
+            returnValue["subjects"].append(data)
+        return JsonResponse(OK_200(data=returnValue), status=200)
 
 
 @method_decorator(csrf_exempt, name='dispatch')
