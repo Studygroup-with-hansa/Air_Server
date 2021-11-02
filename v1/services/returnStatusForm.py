@@ -14,6 +14,8 @@ def BAD_REQUEST_400(data={}, message='Bad request'):
 
 def INVALID_TOKEN():
     STATUS_FORM = {
-        "detail": "Invalid token."
+        "status": 401,
+        "detail": "Invalid token.",
+        "data": {}
     }
     return STATUS_FORM
