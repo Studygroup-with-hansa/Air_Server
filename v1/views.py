@@ -183,6 +183,75 @@ class alterUser(APIView):
 
 
 @method_decorator(csrf_exempt, name='dispatch')
+class getStatsOfPeriod(APIView):
+    def post(self, request):
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            _dateStart = request.data['startDate']
+            _dateEnd = request.data['endDate']
+            _dateStart = _dateStart.split('-')
+            _dateEnd = _dateEnd.split('-')
+            try:
+                year = int(_dateStart[0])
+                month = int(_dateStart[1])
+                day = int(_dateStart[2])
+                _dateStart = date(year, month, day)
+                year = int(_dateEnd[0])
+                month = int(_dateEnd[1])
+                day = int(_dateEnd[2])
+                _dateEnd = date(year, month, day)
+            except (IndexError, TypeError):
+                return JsonResponse(BAD_REQUEST_400(message='invalid date given', data={}), status=400)
+        except (KeyError, ValueError):
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        if _dateStart >= _dateEnd or _dateEnd > datetime.now().date():
+            return JsonResponse(BAD_REQUEST_400(message='invalid date given', data={}), status=400)
+        returnData = {
+            "totalTime": 0,
+            "goals": 0,
+            "achievementRate": 0,
+            "stats": []
+        }
+        stepDate = _dateStart
+        while stepDate <= _dateEnd:
+            statForm = {
+                "date": str(stepDate.strftime("%Y-%m-%d")),
+                "totalStudyTime": 0,
+                "achievementRate": 0,
+                "subject": [],
+                "goal": 0
+            }
+            try:
+                dateObject = Daily.objects.get(userInfo=request.user, date=stepDate)
+                statForm["goal"] = dateObject.goal
+            except ObjectDoesNotExist:
+                returnData["stats"].append(statForm)
+                stepDate += timedelta(days=1)
+                continue
+            statForm["goal"] = dateObject.goal
+            subjects = dailySubject.objects.filter(dateAndUser=dateObject)
+            subjects = list(subjects)
+            if not subjects.__len__():
+                returnData["stats"].append(statForm)
+                stepDate += timedelta(days=1)
+                continue
+            else:
+                for _subject in subjects:
+                    statForm["totalStudyTime"] += _subject.time
+                    subjectObject = {
+                        "title": _subject.title,
+                        "time": _subject.time,
+                        "color": _subject.color
+                    }
+                    statForm["subject"].append(subjectObject)
+                statForm["achievementRate"] = statForm["totalStudyTime"]/statForm["goal"]*100
+                returnData["stats"].append(statForm)
+            stepDate += timedelta(days=1)
+        return JsonResponse(OK_200(data=returnData), status=200)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
 class subject(APIView):
     def post(self, request):
         if not request.user.is_authenticated or request.user.is_anonymous:
