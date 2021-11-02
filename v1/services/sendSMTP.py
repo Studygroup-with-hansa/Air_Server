@@ -1,7 +1,8 @@
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import smtplib
-from ..config import config as cfg
+# from ..config import config as cfg
+from ..secret import secretData as cfg
 
 
 def make(sender, receiver, title, content):
