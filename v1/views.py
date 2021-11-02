@@ -589,3 +589,4 @@ class stopTimer(APIView):
             return JsonResponse(OK_200(data={}), status=200)
         except (ObjectDoesNotExist, TypeError):
             return JsonResponse(CUSTOM_CODE(message="Timer is already stopped", data={}, status=409), status=409)
+
