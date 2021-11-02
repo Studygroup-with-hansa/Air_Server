@@ -461,6 +461,59 @@ class todoListState(APIView):
         else:
             todoObj.isItDone = True
         todoObj.save()
+        return JsonResponse(OK_200(data={"isitDone": todoObj.isItDone}), status=200)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class memo(APIView):
+    def post(self, request):
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            _date = request.data['date']
+            _date = _date.split('-')
+            try:
+                year = int(_date[0])
+                month = int(_date[1])
+                day = int(_date[2])
+                _date = date(year, month, day)
+            except (IndexError, TypeError):
+                return JsonResponse(BAD_REQUEST_400(message='invalid date given', data={}), status=400)
+            today = datetime.now()
+            if _date.year == today.year and _date.day == today.day:
+                isToday = True
+            else:
+                isToday = False
+        except (KeyError, ValueError):
+            _date = datetime.now()
+            isToday = True
+        try:
+            memoContent = request.data['memo']
+        except (KeyError, ValueError):
+            return JsonResponse(BAD_REQUEST_400(message="Some Values are missing"), status=400)
+        if isToday:
+            try:
+                memoDate = Daily.objects.get(userInfo=request.user, date=_date)
+                memoDate.todo = str(memoContent)
+                memoDate.save()
+                return JsonResponse(OK_200(), status=200)
+            except ObjectDoesNotExist:
+                memoDate = Daily(
+                    userInfo=request.user,
+                    date=_date,
+                    goal=request.user.targetTime,
+                    todo=str(memoContent)
+                )
+                memoDate.save()
+                return JsonResponse(OK_200(), status=200)
+        else:
+            try:
+                memoDate = Daily.objects.get(userInfo=request.user, date=_date)
+                memoDate.todo = str(memoContent)
+                memoDate.save()
+                return JsonResponse(OK_200(), status=200)
+            except ObjectDoesNotExist:
+                return JsonResponse(BAD_REQUEST_400(message='invalid date given', data={}), status=400)
 
 
 @method_decorator(csrf_exempt, name='dispatch')
