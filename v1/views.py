@@ -48,8 +48,8 @@ class requestEmailAuth(APIView):
 
     def put(self, request):
         try:
-            authCode_req = request.data['auth'].upper()
-            email = request.data['email']
+            authCode_req = request.query_params['auth'].upper()
+            email = request.query_params['email']
         except (KeyError, ValueError):
             return JsonResponse(BAD_REQUEST_400(message='Some Values are missing'), status=400)
         authModel = emailAuth.objects.get(mail=email)
@@ -81,6 +81,8 @@ class requestEmailAuth(APIView):
 @method_decorator(csrf_exempt, name='dispatch')
 class modifyUserEmail(APIView):
     def post(self, request):
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
         try:
             email = request.data['email']
         except (KeyError, ValueError):
@@ -102,8 +104,10 @@ class modifyUserEmail(APIView):
         return JsonResponse(BAD_REQUEST_400(message='Given email already Exists', data={"isEmailExist": True, "emailSent": False}), status=400)
 
     def put(self, request):
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
         try:
-            authCode = request.data['auth'].upper()
+            authCode = request.query_params['auth'].upper()
         except (KeyError, ValueError):
             return JsonResponse(BAD_REQUEST_400(message='Some Values are missing'), status=400)
         userModel = request.user
@@ -127,8 +131,10 @@ class modifyUserEmail(APIView):
 @method_decorator(csrf_exempt, name='dispatch')
 class modifyUserName(APIView):
     def put(self, request):
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
         try:
-            newName = request.data['name']
+            newName = request.query_params['name']
         except (KeyError, ValueError):
             return JsonResponse(BAD_REQUEST_400(message='Some Values are missing'), status=400)
         try:
@@ -146,6 +152,8 @@ class modifyUserName(APIView):
 @method_decorator(csrf_exempt, name='dispatch')
 class getUserBasicInfo(APIView):
     def get(self, request):
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
         try:
             userModel = request.user
             email = userModel.email
@@ -159,13 +167,16 @@ class getUserBasicInfo(APIView):
 @method_decorator(csrf_exempt, name='dispatch')
 class checkTokenValidation(APIView):
     def get(self, request):
-        userModel = request.user
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
         return JsonResponse(CUSTOM_CODE(status=200, data={}, message='Valid Token'), status=200)
 
 
 @method_decorator(csrf_exempt, name='dispatch')
 class alterUser(APIView):
     def delete(self, request):
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
         userModel = request.user
         userModel.delete()
         return JsonResponse(OK_200(data={}), status=200)
@@ -174,6 +185,8 @@ class alterUser(APIView):
 @method_decorator(csrf_exempt, name='dispatch')
 class subject(APIView):
     def post(self, request):
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
         try:
             subjTitle = request.data['title']
             subjColor = request.data['color']
@@ -193,6 +206,8 @@ class subject(APIView):
 
 
     def delete(self, request):
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
         try:
             subjTitle = request.query_params['title']
         except (KeyError, ValueError):
@@ -209,6 +224,8 @@ class subject(APIView):
 
 
     def put(self, request):
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
         try:
             subjectTitle = request.query_params['title']
         except (KeyError, ValueError):
@@ -519,6 +536,8 @@ class memo(APIView):
 @method_decorator(csrf_exempt, name='dispatch')
 class startTimer(APIView):
     def post(self, request):
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
         try:
             subjectTitle = request.data['title']
         except (KeyError, ValueError):
@@ -574,6 +593,8 @@ class startTimer(APIView):
 @method_decorator(csrf_exempt, name='dispatch')
 class stopTimer(APIView):
     def post(self, request):
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
         try:
             userDB = request.user
             timeProgress = timezone.now() - request.user.timerStartTime
