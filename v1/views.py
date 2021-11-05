@@ -789,3 +789,26 @@ class groupDetailAPI(APIView):
             except (KeyError, ValueError, IndexError):
                 break
         return JsonResponse(OK_200(data=returnValue), status=200)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class groupUserAPI(APIView):
+    def put(self, request):
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            groupCode = request.query_params['groupCode']
+            groupCode = groupCode.upper()
+        except (KeyError, ValueError):
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            groupObject = Group.objects.get(groupCode=groupCode)
+        except ObjectDoesNotExist:
+            return JsonResponse(BAD_REQUEST_400(message='invalid group code', data={}), status=400)
+        try:
+            groupObject.user.get(email=request.user.email)
+            return JsonResponse(CUSTOM_CODE(status=409, message='Already joind group', data={}), status=409)
+        except ObjectDoesNotExist:
+            pass
+        groupObject.user.add(request.user)
+        return JsonResponse(OK_200(data={"code": groupObject.groupCode}), status=200)
