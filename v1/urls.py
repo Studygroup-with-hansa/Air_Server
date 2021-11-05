@@ -18,4 +18,5 @@ urlpatterns = [
     path('user/data/subject/checklist/status/', views.todoListState.as_view(), name='index'),
     path('user/timer/start/', views.startTimer.as_view(), name='index'),
     path('user/timer/stop/', views.stopTimer.as_view(), name='index'),
+    path('user/data/group/', views.groupAPI.as_view(), name='index')
 ]
