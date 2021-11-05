@@ -673,8 +673,10 @@ class stopTimer(APIView):
             daily = Daily.objects.get(userInfo=userDB, date=timezone.now())
             _runningSubject = userSubject.objects.get(primaryKey=userDB.timerRunningSubject_id)
             runningSubject = dailySubject.objects.get(dateAndUser=daily, title=_runningSubject.title)
-            runningSubject.time = int(timeProgress.total_seconds())
+            runningSubject.time += int(timeProgress.total_seconds())
             runningSubject.save()
+            daily.totalStudyTime += int(timeProgress.total_seconds())
+            daily.save()
             userDB.isTimerRunning = False
             userDB.timerRunningSubject = None
             userDB.timerStartTime = None
@@ -690,7 +692,7 @@ class groupAPI(APIView):
         if not request.user.is_authenticated or request.user.is_anonymous:
             return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
         try:
-            groupObject = Group.objects.get(leaderUser=request.user)
+            Group.objects.get(leaderUser=request.user)
             return JsonResponse(CUSTOM_CODE(status=409, message='Group is already exists', data={}), status=409)
         except ObjectDoesNotExist:
             while True:

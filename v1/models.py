@@ -63,6 +63,7 @@ class Daily(models.Model):
     userInfo = models.ForeignKey("User", related_name='user_daily', on_delete=models.CASCADE, null=True, verbose_name='Information of Daily', db_column="userEmail")
     date = models.DateField(default=now, verbose_name='Date', null=False, primary_key=True)
     goal = models.IntegerField(default=0, verbose_name='Daily goal (sec)', blank=False, null=False)
+    totalStudyTime = models.IntegerField(default=0, null=False)
     memo = models.TextField(default='', null=False)
 
 
