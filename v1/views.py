@@ -245,7 +245,10 @@ class getStatsOfPeriod(APIView):
                         "color": _subject.color
                     }
                     statForm["subject"].append(subjectObject)
-                statForm["achievementRate"] = statForm["totalStudyTime"]/statForm["goal"]*100
+                try:
+                    statForm["achievementRate"] = statForm["totalStudyTime"]/statForm["goal"]*100
+                except ZeroDivisionError:
+                    statForm["achievementRate"] = 0.0
                 returnData["stats"].append(statForm)
             stepDate += timedelta(days=1)
         return JsonResponse(OK_200(data=returnData), status=200)
@@ -486,7 +489,7 @@ class todoList_API(APIView):
         if not request.user.is_authenticated or request.user.is_anonymous:
             return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
         try:
-            _date = request.data['date']
+            _date = request.query_params['date']
             _date = _date.split('-')
             try:
                 year = int(_date[0])
@@ -679,4 +682,32 @@ class stopTimer(APIView):
             return JsonResponse(OK_200(data={}), status=200)
         except (ObjectDoesNotExist, TypeError):
             return JsonResponse(CUSTOM_CODE(message="Timer is already stopped", data={}, status=409), status=409)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class groupAPI(APIView):
+    def post(self, request):
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            groupObject = Group.objects.get(leaderUser=request.user)
+            return JsonResponse(CUSTOM_CODE(status=409, message='Group is already exists', data={}), status=409)
+        except ObjectDoesNotExist:
+            while True:
+                randomCode = randCode(8).upper()
+                try:
+                    Group.objects.get(groupCode=randomCode)
+                except ObjectDoesNotExist:
+                    break
+            groupObject = Group(
+                groupCode=randomCode,
+                leaderUser=request.user,
+                userCount=1
+            )
+            groupObject.save()
+            groupObject.user.add(request.user)
+            return JsonResponse(OK_200(data={"code": groupObject.groupCode}), status=200)
+
+    def get(self, request):
+        pass
 

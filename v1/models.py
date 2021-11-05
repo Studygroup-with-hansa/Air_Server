@@ -107,3 +107,10 @@ class User(AbstractUser):
     class Meta:
         verbose_name = 'user'
         verbose_name_plural = 'users'
+
+
+class Group(models.Model):
+    groupCode = models.CharField(max_length=8, verbose_name='code', null=False, primary_key=True, unique=True)
+    leaderUser = models.OneToOneField('User', related_name='leader', on_delete=models.CASCADE, null=False)
+    userCount = models.IntegerField(default=1, null=False)
+    user = models.ManyToManyField(User)
