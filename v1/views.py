@@ -489,7 +489,7 @@ class todoList_API(APIView):
         if not request.user.is_authenticated or request.user.is_anonymous:
             return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
         try:
-            _date = request.data['date']
+            _date = request.query_params['date']
             _date = _date.split('-')
             try:
                 year = int(_date[0])
