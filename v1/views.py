@@ -1,4 +1,5 @@
 import json
+from operator import itemgetter
 
 from rest_framework.views import APIView
 from .services.returnStatusForm import *
@@ -711,5 +712,37 @@ class groupAPI(APIView):
             return JsonResponse(OK_200(data={"code": groupObject.groupCode}), status=200)
 
     def get(self, request):
-        pass
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            groupObjects = Group.objects.filter(user=request.user)
+            groupObjects = list(groupObjects)
+            returnValue = {
+                "groupList": []
+            }
+            for groupObject in groupObjects:
+                groupValue = {
+                    "code": groupObject.groupCode,
+                    "userCount": groupObject.userCount,
+                    "leader": groupObject.leaderUser.username,
+                    "leaderEmail": groupObject.leaderUser.email,
+                    "firstPlace": "",
+                    "firstPlaceStudyTime": 0
+                }
+                userObjects = groupObject.user.all()
+                userList = list()
+                for userObject in userObjects:
+                    try:
+                        userStudyTimeInfo = {"user": userObject,
+                                             "time": Daily.objects.get(userInfo=userObject, date=datetime.now().date())}
+                    except ObjectDoesNotExist:
+                        userStudyTimeInfo = {"user": userObject, "time": 0}
+                    userList.append(userStudyTimeInfo)
+                userList = sorted(userList, key=itemgetter('time'))
+                groupValue["firstPlace"] = userList[-1]["user"].username
+                groupValue["firstPlaceStudyTime"] = userList[-1]["time"]
+                returnValue["groupList"].append(groupValue)
+            return JsonResponse(OK_200(data=returnValue), status=200)
+        except ObjectDoesNotExist:
+            return JsonResponse(OK_200(data={"groupList": []}), status=200)
 
