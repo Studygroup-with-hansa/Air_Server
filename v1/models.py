@@ -70,7 +70,7 @@ class Daily(models.Model):
 class emailAuth(models.Model):
     mail = models.EmailField(verbose_name='Mail Sender', max_length=255, unique=True, primary_key=True)
     authCode = models.CharField(verbose_name='Auth', max_length=8)
-    reqeustTime = models.DateTimeField(verbose_name='RequestedTime', default=timezone.now)
+    requestTime = models.DateTimeField(verbose_name='RequestedTime', default=timezone.now)
 
 
 class User(AbstractUser):
@@ -85,9 +85,9 @@ class User(AbstractUser):
 
     targetTime = models.IntegerField(default=0, null=False)
 
-    isTimerRunning = models.BooleanField(default=False, null=False, verbose_name='Timer running checker Flag')
-    timerRunningSubject = models.OneToOneField(userSubject, default=None, null=True, verbose_name='Timer Running Subject', on_delete=models.SET_DEFAULT, related_name='timerRunningSubject')
-    timerStartTime = models.DateTimeField(null=True, verbose_name='Current Timer StartedTime')
+    isTimerRunning = models.BooleanField(default=False, null=False, verbose_name='Timer running checker Flag', blank=True)
+    timerRunningSubject = models.OneToOneField(userSubject, default=None, null=True, verbose_name='Timer Running Subject', on_delete=models.SET_DEFAULT, related_name='timerRunningSubject', blank=True)
+    timerStartTime = models.DateTimeField(null=True, verbose_name='Current Timer StartedTime', blank=True)
 
     newMail = models.EmailField(verbose_name='New Mail', max_length=255, null=True)
     authCode = models.CharField(verbose_name='New Mail registrations auth field', max_length=8, null=True)

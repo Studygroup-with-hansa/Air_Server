@@ -55,7 +55,7 @@ class requestEmailAuth(APIView):
             return JsonResponse(BAD_REQUEST_400(message='Some Values are missing'), status=400)
         authModel = emailAuth.objects.get(mail=email)
         authCode = authModel.authCode
-        authTime = authModel.reqeustTime
+        authTime = authModel.requestTime
         if authCode == authCode_req:
             pass
         else:
@@ -821,6 +821,8 @@ class groupUserAPI(APIView):
         except ObjectDoesNotExist:
             pass
         groupObject.user.add(request.user)
+        groupObject.userCount += 1
+        groupObject.save()
         return JsonResponse(OK_200(data={"code": groupObject.groupCode}), status=200)
 
     def delete(self, request):
@@ -842,4 +844,5 @@ class groupUserAPI(APIView):
         if groupObject.leaderUser == request.user:
             return JsonResponse(BAD_REQUEST_400(message="Cannot Exit", data={}), status=400)
         groupObject.user.remove(request.user)
+        groupObject.userCount -= 1
         return JsonResponse(OK_200(data={}), status=200)
