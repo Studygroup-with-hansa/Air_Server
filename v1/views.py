@@ -1,4 +1,5 @@
 import json
+from operator import itemgetter
 
 from rest_framework.views import APIView
 from .services.returnStatusForm import *
@@ -711,5 +712,132 @@ class groupAPI(APIView):
             return JsonResponse(OK_200(data={"code": groupObject.groupCode}), status=200)
 
     def get(self, request):
-        pass
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            groupObjects = Group.objects.filter(user=request.user)
+            groupObjects = list(groupObjects)
+            returnValue = {
+                "groupList": []
+            }
+            for groupObject in groupObjects:
+                groupValue = {
+                    "code": groupObject.groupCode,
+                    "userCount": groupObject.userCount,
+                    "leader": groupObject.leaderUser.username,
+                    "leaderEmail": groupObject.leaderUser.email,
+                    "firstPlace": "",
+                    "firstPlaceStudyTime": 0
+                }
+                userObjects = groupObject.user.all()
+                userList = list()
+                for userObject in userObjects:
+                    try:
+                        userStudyTimeInfo = {"user": userObject,
+                                             "time": Daily.objects.get(userInfo=userObject, date=datetime.now().date())}
+                    except ObjectDoesNotExist:
+                        userStudyTimeInfo = {"user": userObject, "time": 0}
+                    userList.append(userStudyTimeInfo)
+                userList = sorted(userList, key=itemgetter('time'))
+                groupValue["firstPlace"] = userList[-1]["user"].username
+                groupValue["firstPlaceStudyTime"] = userList[-1]["time"]
+                returnValue["groupList"].append(groupValue)
+            return JsonResponse(OK_200(data=returnValue), status=200)
+        except ObjectDoesNotExist:
+            return JsonResponse(OK_200(data={"groupList": []}), status=200)
 
+    def delete(self, request):
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            groupObject = Group.objects.get(leaderUser=request.user)
+        except ObjectDoesNotExist:
+            return JsonResponse(CUSTOM_CODE(status=409, message='There is no Group', data={}), status=409)
+        groupObject.delete()
+        return JsonResponse(OK_200(data={}), status=200)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class groupDetailAPI(APIView):
+    def post(self, request):
+        try:
+            groupCode = request.data['groupCode']
+            groupCode = groupCode.upper()
+        except (KeyError, ValueError):
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            groupObject = Group.objects.get(groupCode=groupCode)
+        except ObjectDoesNotExist:
+            return JsonResponse(BAD_REQUEST_400(message='invalid group code', data={}), status=400)
+        returnValue = {
+            "code": groupObject.groupCode,
+            "userList": []
+        }
+        userObjects = groupObject.user.all()
+        for userObject in userObjects:
+            userStudyTimeInfo = {
+                "name": userObject.username,
+                "email": userObject.email,
+                "profileImg": userObject.profileImgURL,
+                "todayStudyTime": 0,
+                "isItOwner": True if userObject == groupObject.leaderUser else False,
+                "rank": 0
+            }
+            try:
+                userStudyTimeInfo["todayStudyTime"] = Daily.objects.get(userInfo=userObject, date=datetime.now().date())
+            except ObjectDoesNotExist:
+                pass
+            returnValue["userList"].append(userStudyTimeInfo)
+        returnValue["userList"] = sorted(returnValue["userList"], key=itemgetter('todayStudyTime'))
+        _temp = 0
+        while True:
+            try:
+                returnValue["userList"][_temp]["rank"] = _temp + 1
+                _temp += 1
+            except (KeyError, ValueError, IndexError):
+                break
+        return JsonResponse(OK_200(data=returnValue), status=200)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class groupUserAPI(APIView):
+    def put(self, request):
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            groupCode = request.query_params['groupCode']
+            groupCode = groupCode.upper()
+        except (KeyError, ValueError):
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            groupObject = Group.objects.get(groupCode=groupCode)
+        except ObjectDoesNotExist:
+            return JsonResponse(BAD_REQUEST_400(message='invalid group code', data={}), status=400)
+        try:
+            groupObject.user.get(email=request.user.email)
+            return JsonResponse(CUSTOM_CODE(status=409, message='Already joind group', data={}), status=409)
+        except ObjectDoesNotExist:
+            pass
+        groupObject.user.add(request.user)
+        return JsonResponse(OK_200(data={"code": groupObject.groupCode}), status=200)
+
+    def delete(self, request):
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            groupCode = request.query_params['groupCode']
+            groupCode = groupCode.upper()
+        except (KeyError, ValueError):
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            groupObject = Group.objects.get(groupCode=groupCode)
+        except ObjectDoesNotExist:
+            return JsonResponse(BAD_REQUEST_400(message='There is no Group', data={}), status=400)
+        try:
+            groupObject.user.get(email=request.user)
+        except ObjectDoesNotExist:
+            return JsonResponse(BAD_REQUEST_400(message='There is no Group', data={}), status=400)
+        if groupObject.leaderUser == request.user:
+            return JsonResponse(BAD_REQUEST_400(message="Cannot Exit", data={}), status=400)
+        groupObject.user.remove(request.user)
+        return JsonResponse(OK_200(data={}), status=200)
