@@ -21,5 +21,5 @@ urlpatterns = [
     path('user/data/group/', views.groupAPI.as_view(), name='index'),
     path('user/data/group/detail/', views.groupDetailAPI.as_view(), name='index'),
     path('user/data/group/detail/user/', views.groupUserAPI.as_view(), name='index'),
-    # path('user/data/group/detail/user/manage/', views.groupUserManageAPI.as_view(), name='index'),
+    path('user/data/group/detail/user/manage/', views.groupUserManageAPI.as_view(), name='index'),
 ]
