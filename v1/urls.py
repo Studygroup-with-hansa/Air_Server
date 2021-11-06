@@ -20,5 +20,5 @@ urlpatterns = [
     path('user/timer/stop/', views.stopTimer.as_view(), name='index'),
     path('user/data/group/', views.groupAPI.as_view(), name='index'),
     path('user/data/group/detail/', views.groupDetailAPI.as_view(), name='index'),
-    path('user/data/group/detial/user/', views.groupUserAPI.as_view(), name='index'),
+    path('user/data/group/detail/user/', views.groupUserAPI.as_view(), name='index'),
 ]

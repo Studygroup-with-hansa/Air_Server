@@ -812,3 +812,24 @@ class groupUserAPI(APIView):
             pass
         groupObject.user.add(request.user)
         return JsonResponse(OK_200(data={"code": groupObject.groupCode}), status=200)
+
+    def delete(self, request):
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            groupCode = request.query_params['groupCode']
+            groupCode = groupCode.upper()
+        except (KeyError, ValueError):
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            groupObject = Group.objects.get(groupCode=groupCode)
+        except ObjectDoesNotExist:
+            return JsonResponse(BAD_REQUEST_400(message='There is no Group', data={}), status=400)
+        try:
+            groupObject.user.get(email=request.user)
+        except ObjectDoesNotExist:
+            return JsonResponse(BAD_REQUEST_400(message='There is no Group', data={}), status=400)
+        if groupObject.leaderUser == request.user:
+            return JsonResponse(BAD_REQUEST_400(message="Cannot Exit", data={}), status=400)
+        groupObject.user.remove(request.user)
+        return JsonResponse(OK_200(data={}), status=200)
