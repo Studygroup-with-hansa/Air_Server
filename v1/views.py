@@ -978,7 +978,7 @@ class postAPI(APIView):
                 returnValue = {
                     "username": postObject.author.username,
                     "userImage": postObject.author.profileImgURL,
-                    "postDate": postObject.postTime,
+                    "postDate": postObject.postTime.day(),
                     "startDate": postObject.startDate,
                     "endDate": postObject.endDate,
                     "achievementRate": achievement,
@@ -990,7 +990,7 @@ class postAPI(APIView):
                 subjectDict = {
                     "username": postObject.author.username,
                     "userImage": postObject.author.profileImgURL,
-                    "postDate": postObject.postTime,
+                    "postDate": postObject.postTime.day(),
                     "startDate": postObject.startDate,
                     "endDate": postObject.endDate,
                     "achievementRate": achievement,
