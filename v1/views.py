@@ -875,3 +875,69 @@ class groupUserManageAPI(APIView):
         groupObject.userCount -= 1
         groupObject.save()
         return JsonResponse(OK_200(data={"code": groupObject.groupCode}), status=200)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class postAPI(APIView):
+    def post(self, request):
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            _dateStart = request.data['startDate']
+            _dateEnd = request.data['endDate']
+            calendarType = request.data['calendarType']
+            _dateStart = _dateStart.split('-')
+            _dateEnd = _dateEnd.split('-')
+            try:
+                year = int(_dateStart[0])
+                month = int(_dateStart[1])
+                day = int(_dateStart[2])
+                _dateStart = date(year, month, day)
+                year = int(_dateEnd[0])
+                month = int(_dateEnd[1])
+                day = int(_dateEnd[2])
+                _dateEnd = date(year, month, day)
+            except (IndexError, TypeError):
+                return JsonResponse(BAD_REQUEST_400(message='invalid date given', data={}), status=400)
+        except (KeyError, ValueError):
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        if _dateStart >= _dateEnd or _dateEnd > datetime.now().date():
+            return JsonResponse(BAD_REQUEST_400(message='invalid date given', data={}), status=400)
+        stepDate = _dateStart
+        achievement = list()
+        while stepDate <= _dateEnd:
+            dailyAchievement = 0.0
+            dailyStudyTime = 0
+            try:
+                dateObject = Daily.objects.get(userInfo=request.user, date=stepDate)
+                dailyGoal = dateObject.goal
+            except ObjectDoesNotExist:
+                achievement.append(dailyAchievement)
+                stepDate += timedelta(days=1)
+                continue
+            subjectObjects = dailySubject.objects.filter(dateAndUser=dateObject)
+            subjectObjects = list(subjectObjects)
+            if not subjectObjects.__len__():
+                achievement.append(dailyAchievement)
+                stepDate += timedelta(days=1)
+                continue
+            else:
+                for _subject in subjectObjects:
+                    dailyStudyTime += _subject.time
+                try:
+                    dailyAchievement = dailyStudyTime/dailyGoal*100
+                except ZeroDivisionError:
+                    dailyAchievement = 0.0
+                achievement.append(dailyAchievement)
+            stepDate += timedelta(days=1)
+        achievement = '|'.join(achievement)
+        postObject = post(
+            author=request.user,
+            startDate=_dateStart,
+            endDate=_dateEnd,
+            calendarType=calendarType,
+            achievement=achievement
+        )
+        postObject.save()
+        return JsonResponse(OK_200(data={"pk": postObject.primaryKey}), status=200)
+
