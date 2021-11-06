@@ -941,3 +941,19 @@ class postAPI(APIView):
         postObject.save()
         return JsonResponse(OK_200(data={"pk": postObject.primaryKey}), status=200)
 
+    def delete(self, request):
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            primaryKey = request.query_params['pk']
+        except (KeyError, ValueError):
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            postObject = post.objects.get(primaryKey=primaryKey)
+        except ObjectDoesNotExist:
+            return JsonResponse(BAD_REQUEST_400(message='No Exiting Post', data={}), status=400)
+        if not postObject.author == request.user:
+            return JsonResponse(BAD_REQUEST_400(message='No Permission to Delete', data={}), status=400)
+        else:
+            postObject.delete()
+            return JsonResponse(OK_200(data={}), status=200)
