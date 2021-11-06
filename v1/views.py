@@ -645,9 +645,9 @@ class startTimer(APIView):
         try:
             todaySubject = todaySubject
             pass
-        except NameError:
+        except (NameError, UnboundLocalError):
             try:
-                todaySubject = dailySubject.objects.get(dateAndUser=daily, date=timezone.now())
+                todaySubject = dailySubject.objects.get(dateAndUser=daily, title=subjectTitle)
             except ObjectDoesNotExist:
                 todaySubject = dailySubject(
                     dateAndUser=daily,
