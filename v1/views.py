@@ -903,40 +903,11 @@ class postAPI(APIView):
             return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
         if _dateStart >= _dateEnd or _dateEnd > datetime.now().date():
             return JsonResponse(BAD_REQUEST_400(message='invalid date given', data={}), status=400)
-        stepDate = _dateStart
-        achievement = list()
-        while stepDate <= _dateEnd:
-            dailyAchievement = 0.0
-            dailyStudyTime = 0
-            try:
-                dateObject = Daily.objects.get(userInfo=request.user, date=stepDate)
-                dailyGoal = dateObject.goal
-            except ObjectDoesNotExist:
-                achievement.append(dailyAchievement)
-                stepDate += timedelta(days=1)
-                continue
-            subjectObjects = dailySubject.objects.filter(dateAndUser=dateObject)
-            subjectObjects = list(subjectObjects)
-            if not subjectObjects.__len__():
-                achievement.append(dailyAchievement)
-                stepDate += timedelta(days=1)
-                continue
-            else:
-                for _subject in subjectObjects:
-                    dailyStudyTime += _subject.time
-                try:
-                    dailyAchievement = dailyStudyTime/dailyGoal*100
-                except ZeroDivisionError:
-                    dailyAchievement = 0.0
-                achievement.append(dailyAchievement)
-            stepDate += timedelta(days=1)
-        achievement = '|'.join(achievement)
         postObject = post(
             author=request.user,
             startDate=_dateStart,
             endDate=_dateEnd,
             calendarType=calendarType,
-            achievement=achievement
         )
         postObject.save()
         return JsonResponse(OK_200(data={"pk": postObject.primaryKey}), status=200)
@@ -957,3 +928,76 @@ class postAPI(APIView):
         else:
             postObject.delete()
             return JsonResponse(OK_200(data={}), status=200)
+
+    def get(self, request):
+        try:
+            primaryKey = request.query_params['pk']
+            pkExists = True
+            try:
+                postObjects = post.objects.get(primaryKey=primaryKey)
+                postObjects = list(postObjects)
+            except ObjectDoesNotExist:
+                return JsonResponse(BAD_REQUEST_400(message='No Exiting Post', data={}), status=400)
+        except (KeyError, ValueError):
+            pkExists = False
+            postObjects = post.objects.get().order_by('postTime')
+        returnValue = {}
+        if not pkExists:
+            returnValue = {"post": []}
+        for postObject in postObjects:
+            _dateStart = postObject.startDate
+            _dateEnd = postObject.endDate
+            stepDate = _dateStart
+            achievement = list()
+            while stepDate <= _dateEnd:
+                dailyAchievement = 0.0
+                dailyStudyTime = 0
+                try:
+                    dateObject = Daily.objects.get(userInfo=postObject.author, date=stepDate)
+                    dailyGoal = dateObject.goal
+                except ObjectDoesNotExist:
+                    achievement.append(dailyAchievement)
+                    stepDate += timedelta(days=1)
+                    continue
+                subjectObjects = dailySubject.objects.filter(dateAndUser=dateObject)
+                subjectObjects = list(subjectObjects)
+                if not subjectObjects.__len__():
+                    achievement.append(dailyAchievement)
+                    stepDate += timedelta(days=1)
+                    continue
+                else:
+                    for _subject in subjectObjects:
+                        dailyStudyTime += _subject.time
+                    try:
+                        dailyAchievement = dailyStudyTime / dailyGoal * 100
+                    except ZeroDivisionError:
+                        dailyAchievement = 0.0
+                    achievement.append(dailyAchievement)
+                stepDate += timedelta(days=1)
+            if pkExists:
+                returnValue = {
+                    "username": postObject.author.username,
+                    "userImage": postObject.author.profileImgURL,
+                    "postDate": postObject.postTime,
+                    "startDate": postObject.startDate,
+                    "endDate": postObject.endDate,
+                    "achievementRate": achievement,
+                    "calendarType": postObject.calendarType,
+                    "like": postObject.likeCount,
+                    "idx": postObject.primaryKey
+                }
+            else:
+                subjectDict = {
+                    "username": postObject.author.username,
+                    "userImage": postObject.author.profileImgURL,
+                    "postDate": postObject.postTime,
+                    "startDate": postObject.startDate,
+                    "endDate": postObject.endDate,
+                    "achievementRate": achievement,
+                    "calendarType": postObject.calendarType,
+                    "like": postObject.likeCount,
+                    "idx": postObject.primaryKey
+                }
+                returnValue["post"].append(subjectDict)
+        return JsonResponse(OK_200(data=returnValue), status=200)
+
