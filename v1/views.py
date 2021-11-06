@@ -746,12 +746,20 @@ class groupAPI(APIView):
         except ObjectDoesNotExist:
             return JsonResponse(OK_200(data={"groupList": []}), status=200)
 
+    def delete(self, request):
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            groupObject = Group.objects.get(leaderUser=request.user)
+        except ObjectDoesNotExist:
+            return JsonResponse(CUSTOM_CODE(status=409, message='There is no Group', data={}), status=409)
+        groupObject.delete()
+        return JsonResponse(OK_200(data={}), status=200)
+
 
 @method_decorator(csrf_exempt, name='dispatch')
 class groupDetailAPI(APIView):
     def post(self, request):
-        if not request.user.is_authenticated or request.user.is_anonymous:
-            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
         try:
             groupCode = request.data['groupCode']
             groupCode = groupCode.upper()
