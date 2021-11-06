@@ -846,3 +846,32 @@ class groupUserAPI(APIView):
         groupObject.user.remove(request.user)
         groupObject.userCount -= 1
         return JsonResponse(OK_200(data={}), status=200)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class groupUserManageAPI(APIView):
+    def delete(self, request):
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            userToBeDeleted = request.query_params['userMail']
+            groupCode = request.query_params['groupCode']
+            groupCode = groupCode.upper()
+        except (KeyError, ValueError):
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            groupObject = Group.objects.get(groupCode=groupCode)
+        except ObjectDoesNotExist:
+            return JsonResponse(CUSTOM_CODE(status=409, message='There is no Group', data={}), status=409)
+        if groupObject.leaderUser == userToBeDeleted:
+            return JsonResponse(CUSTOM_CODE(status=409, message='Cannot Exit', data={}), status=409)
+        if not groupObject.leaderUser == request.user:
+            return JsonResponse(CUSTOM_CODE(status=401, message='Unauthorized', data={}), status=401)
+        try:
+            groupObject.user.get(email=userToBeDeleted)
+        except ObjectDoesNotExist:
+            return JsonResponse(CUSTOM_CODE(status=404, message='User not found', data={}), status=404)
+        groupObject.user.remove(userToBeDeleted)
+        groupObject.userCount -= 1
+        groupObject.save()
+        return JsonResponse(OK_200(data={"code": groupObject.groupCode}), status=200)
