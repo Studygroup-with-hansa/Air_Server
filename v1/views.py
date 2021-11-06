@@ -63,15 +63,17 @@ class requestEmailAuth(APIView):
         validTimeChecker = timezone.now() - timedelta(minutes=5)
         if authTime < validTimeChecker:
             return JsonResponse(CUSTOM_CODE(status=410, message='time limit exceeded (5min)', data={"token": ""}), status=410)
-
-        userPasswd = randCode(60)
-        userModel = User.objects.create_user(
-            passwd=userPasswd,
-            email=email,
-            password=userPasswd,
-            username='익명'
-        )
-        userModel.save()
+        try:
+            userModel = User.objects.get(email=email)
+        except ObjectDoesNotExist:
+            userPasswd = randCode(60)
+            userModel = User.objects.create_user(
+                passwd=userPasswd,
+                email=email,
+                password=userPasswd,
+                username='익명'
+            )
+            userModel.save()
         try:
             token = Token.objects.create(user=userModel)
         except IntegrityError:
