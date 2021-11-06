@@ -656,7 +656,7 @@ class startTimer(APIView):
                     time=0
                 )
                 todaySubject.save()
-            userDB.timerRunningSubject = todaySubject
+            userDB.timerRunningSubject = runningSubject
             userDB.save()
         userDB.isTimerRunning = True
         userDB.timerRunningSubject = runningSubject

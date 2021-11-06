@@ -75,9 +75,10 @@ class emailAuth(models.Model):
 
 class User(AbstractUser):
     objects = UserManager()
+    primaryKey = models.BigAutoField(verbose_name='pk', db_column='pk', primary_key=True)
     # id = models.AutoField(primary_key=True, null=False)
     style = models.CharField(max_length=10, verbose_name='user\'s style', null=True)
-    email = models.EmailField(verbose_name='email', max_length=255, unique=True, primary_key=True)
+    email = models.EmailField(verbose_name='email', max_length=255, unique=True, primary_key=False)
     username = models.CharField(max_length=8, verbose_name='user name', default='익명', null=False)
     profileImgURL = models.URLField(verbose_name='profile Image URL', default=cfg.DEFAULT_PROFILE_IMG)
     is_active = models.BooleanField(default=True)
@@ -115,3 +116,28 @@ class Group(models.Model):
     leaderUser = models.OneToOneField('User', related_name='leader', on_delete=models.CASCADE, null=False)
     userCount = models.IntegerField(default=1, null=False)
     user = models.ManyToManyField(User)
+
+
+class post(models.Model):
+    primaryKey = models.BigAutoField(verbose_name='pk', db_column='pk', primary_key=True)
+    author = models.ForeignKey("User", on_delete=models.CASCADE)
+    postTime = models.DateTimeField(default=timezone.now)
+    startDate = models.DateField()
+    endDate = models.DateField()
+    calendarType = models.CharField(max_length=6)
+    likeCount = models.IntegerField(default=0, null=False)
+    achievement = models.TextField(default='', null=False)      # Separate with |
+
+
+class comment(models.Model):
+    primaryKey = models.BigAutoField(verbose_name='pk', db_column='pk', primary_key=True)
+    post = models.ForeignKey("post", on_delete=models.CASCADE)
+    author = models.ForeignKey("User", on_delete=models.CASCADE)
+    postTime = models.DateTimeField(default=timezone.now)
+    content = models.TextField(default='', null=False)
+
+
+class like(models.Model):
+    primaryKey = models.BigAutoField(verbose_name='pk', db_column='pk', primary_key=True)
+    post = models.ForeignKey("post", on_delete=models.CASCADE)
+    user = models.ForeignKey("User", on_delete=models.CASCADE)
