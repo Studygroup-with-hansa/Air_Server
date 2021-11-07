@@ -90,10 +90,21 @@ class groupAdmin(admin.ModelAdmin):
     filter_horizontal = ()
 
 
+class todoListAdmin(admin.ModelAdmin):
+    list_display = ('subject', 'isItDone')
+    list_filter = ('isItDone',)
+    fieldsets = (
+        ("TodoList Info", {"fields": ("subject", "todo", "isItDone")}),
+    )
+    search_fields = ("primaryKey", "isItDone",)
+    ordering = ("primaryKey",)
+    filter_horizontal = ()
+
+
 admin.site.register(User, UserAdmin)
 admin.site.register(Daily, DailyAdmin)
 admin.site.register(emailAuth, emailAuthAdmin)
-admin.site.register(todoList)
+admin.site.register(todoList, todoListAdmin)
 admin.site.register(dailySubject, DailySubjectAdmin)
 admin.site.register(userSubject, userSubjectAdmin)
 # admin.site.register(SubjectAdmin)
