@@ -753,7 +753,7 @@ class groupAPI(APIView):
                 for userObject in userObjects:
                     try:
                         userStudyTimeInfo = {"user": userObject,
-                                             "time": Daily.objects.get(userInfo=userObject, date=datetime.now().date())}
+                                             "time": Daily.objects.get(userInfo=userObject, date=datetime.now().date()).totalStudyTime}
                     except ObjectDoesNotExist:
                         userStudyTimeInfo = {"user": userObject, "time": 0}
                     userList.append(userStudyTimeInfo)
@@ -803,7 +803,7 @@ class groupDetailAPI(APIView):
                 "rank": 0
             }
             try:
-                userStudyTimeInfo["todayStudyTime"] = Daily.objects.get(userInfo=userObject, date=datetime.now().date())
+                userStudyTimeInfo["todayStudyTime"] = Daily.objects.get(userInfo=userObject, date=datetime.now().date()).totalStudyTime
             except ObjectDoesNotExist:
                 pass
             returnValue["userList"].append(userStudyTimeInfo)
@@ -1143,4 +1143,3 @@ class postLikeAPI(APIView):
             }
             returnValue["user"].append(likeDataForm)
         return JsonResponse(OK_200(data=returnValue), status=200)
-
