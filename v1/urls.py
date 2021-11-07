@@ -24,4 +24,6 @@ urlpatterns = [
     path('user/data/group/detail/user/', views.groupUserAPI.as_view(), name='index'),
     path('user/data/group/detail/user/manage/', views.groupUserManageAPI.as_view(), name='index'),
     path('user/data/post/', views.postAPI.as_view(), name='index'),
+    path('user/data/post/comment/', views.postCommentAPI.as_view(), name='index'),
+    path('user/data/post/like/', views.postLikeAPI.as_view(), name='index'),
 ]
