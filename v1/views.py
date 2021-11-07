@@ -992,6 +992,10 @@ class postAPI(APIView):
                     achievement.append(dailyAchievement)
                 stepDate += timedelta(days=1)
             if pkExists:
+                try:
+                    likeCount = list(like.objects.filter(post=postObject)).__len__()
+                except ObjectDoesNotExist:
+                    likeCount = 0
                 returnValue = {
                     "username": postObject.author.username,
                     "userImage": postObject.author.profileImgURL,
@@ -1000,10 +1004,14 @@ class postAPI(APIView):
                     "endDate": postObject.endDate.strftime("%Y-%m-%d"),
                     "achievementRate": achievement,
                     "calendarType": postObject.calendarType,
-                    "like": postObject.likeCount,
+                    "like": likeCount,
                     "idx": postObject.primaryKey
                 }
             else:
+                try:
+                    likeCount = list(like.objects.filter(post=postObject)).__len__()
+                except ObjectDoesNotExist:
+                    likeCount = 0
                 subjectDict = {
                     "username": postObject.author.username,
                     "userImage": postObject.author.profileImgURL,
@@ -1012,7 +1020,7 @@ class postAPI(APIView):
                     "endDate": postObject.endDate.strftime("%Y-%m-%d"),
                     "achievementRate": achievement,
                     "calendarType": postObject.calendarType,
-                    "like": postObject.likeCount,
+                    "like": likeCount,
                     "idx": postObject.primaryKey
                 }
                 returnValue["post"].append(subjectDict)

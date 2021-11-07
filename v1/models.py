@@ -125,8 +125,6 @@ class post(models.Model):
     startDate = models.DateField()
     endDate = models.DateField()
     calendarType = models.CharField(max_length=6)
-    likeCount = models.IntegerField(default=0, null=False)
-    # achievement = models.TextField(default='', null=False)      # Separate with |
 
 
 class comment(models.Model):
