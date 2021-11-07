@@ -1114,5 +1114,25 @@ class postLikeAPI(APIView):
             return JsonResponse(OK_200(data={"isChecked": True}), status=200)
 
     def get(self, request):
-        pass
+        try:
+            postPK = request.query_params['pk']
+        except (KeyError, ValueError):
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            postObject = post.objects.get(primaryKey=postPK)
+        except ObjectDoesNotExist:
+            return JsonResponse(BAD_REQUEST_400(message='No Exiting post', data={}), status=400)
+        returnValue = {"user": []}
+        try:
+            likeObjects = like.objects.filter(post=postObject)
+        except ObjectDoesNotExist:
+            return JsonResponse(OK_200(data=returnValue), status=200)
+        likeObjects = list(likeObjects)
+        for likeObject in likeObjects:
+            likeDataForm = {
+                "email": likeObject.user.email,
+                "username": likeObject.user.username
+            }
+            returnValue["user"].append(likeDataForm)
+        return JsonResponse(OK_200(data=returnValue), status=200)
 
