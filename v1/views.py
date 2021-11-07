@@ -532,6 +532,23 @@ class todoList_API(APIView):
             returnValue["subjects"].append(data)
         return JsonResponse(OK_200(data=returnValue), status=200)
 
+    def delete(self, request):
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            pk = request.query_params['pk']
+        except (KeyError, ValueError):
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            todoListObject = todoList.objects.get(primaryKey=pk)
+        except ObjectDoesNotExist:
+            return JsonResponse(BAD_REQUEST_400(message="There's no checklist", data={}), status=400)
+        if todoListObject.subject.dateAndUser.userInfo == request.user:
+            todoListObject.delete()
+            return JsonResponse(OK_200(data={}), status=200)
+        else:
+            return JsonResponse(BAD_REQUEST_400(message="There's no checklist", data={}), status=400)
+
 
 @method_decorator(csrf_exempt, name='dispatch')
 class todoListState(APIView):
