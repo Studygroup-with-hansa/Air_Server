@@ -1040,3 +1040,20 @@ class postCommentAPI(APIView):
         )
         commentObject.save()
         return JsonResponse(OK_200(data={"pk": commentObject.primaryKey}), status=200)
+
+    def delete(self, request):
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            commentPK = request.query_params['pk']
+        except (KeyError, ValueError):
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        try:
+            commentObject = comment.objects.get(primaryKey=commentPK)
+        except ObjectDoesNotExist:
+            return JsonResponse(BAD_REQUEST_400(message='No Exiting comment', data={}), status=400)
+        if commentObject.author == request.user:
+            commentObject.delete()
+            return JsonResponse(OK_200(data={}), status=200)
+        else:
+            return JsonResponse(CUSTOM_CODE(status=401, data={}, message='No Permission to Delete'), status=401)
