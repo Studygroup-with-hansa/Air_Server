@@ -644,7 +644,7 @@ class memo(APIView):
             except (IndexError, TypeError):
                 return JsonResponse(BAD_REQUEST_400(message='invalid date given', data={}), status=400)
             today = datetime.now().date()
-            if _date is today:
+            if _date == today:
                 isToday = True
             else:
                 isToday = False
