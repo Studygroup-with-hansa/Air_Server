@@ -60,8 +60,9 @@ class todoList(models.Model):
 
 
 class Daily(models.Model):
+    primaryKey = models.AutoField(verbose_name='pk', db_column='pk', primary_key=True)
     userInfo = models.ForeignKey("User", related_name='user_daily', on_delete=models.CASCADE, null=True, verbose_name='Information of Daily', db_column="userEmail")
-    date = models.DateField(default=now, verbose_name='Date', null=False, primary_key=True, unique=False)
+    date = models.DateField(default=now, verbose_name='Date', null=False, unique=False)
     goal = models.IntegerField(default=0, verbose_name='Daily goal (sec)', blank=False, null=False, unique=False)
     totalStudyTime = models.IntegerField(default=0, null=False)
     memo = models.TextField(default='', null=False)
