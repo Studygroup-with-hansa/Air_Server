@@ -16,7 +16,7 @@ class UserAdmin(BaseUserAdmin):
     fieldsets = (
         (None, {"fields": ('email', 'password', 'profileImgURL')}),
         ('Personal Info', {'fields': ('username', 'date_joined')}),
-        ('Status Info', {'fields': ('isTimerRunning', 'timerRunningSubject', 'timerStartTime')}),
+        ('Status Info', {'fields': ('isTimerRunning', 'timerRunningSubject', 'timerStartTime', 'targetTime')}),
         ('Permissions', {'fields': ('is_staff', 'is_superuser', 'is_active')})
     )
 

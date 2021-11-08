@@ -433,7 +433,9 @@ class targetTime(APIView):
         except (KeyError, ValueError):
             return JsonResponse(BAD_REQUEST_400(message='Some Values are missing'), status=400)
         try:
-            Daily.objects.get(userInfo=request.user, date=datetime.now().date()).save()
+            dailyObject = Daily.objects.get(userInfo=request.user, date=datetime.now().date())
+            dailyObject.goal = int(time)
+            dailyObject.save()
         except ObjectDoesNotExist:
             pass
         request.user.targetTime = int(time)
