@@ -38,8 +38,8 @@ class userSubject(models.Model):
     # date = models.ForeignKey("Daily", related_name='daily', on_delete=models.CASCADE, null=True, verbose_name='Date info', db_column="date")
     primaryKey = models.BigAutoField(verbose_name='pk', db_column='pk', primary_key=True)
     user = models.ForeignKey("User", related_name='user_subject', on_delete=models.CASCADE, null=True, verbose_name='User info', db_column="user")
-    title = models.CharField(default='기타', verbose_name='Subject Name', null=False, max_length=15)
-    color = models.CharField(default=cfg.DEFAULT_SUBJECT_COLOR, verbose_name="Subject's personal Color", null=False, max_length=7)
+    title = models.CharField(default='기타', verbose_name='Subject Name', null=False, max_length=15, unique=False)
+    color = models.CharField(default=cfg.DEFAULT_SUBJECT_COLOR, verbose_name="Subject's personal Color", null=False, max_length=7, unique=False)
     # time = models.IntegerField(default=0, verbose_name='Study time - second', null=False)
     # startTime = models.DateTimeField(verbose_name='LastTimerStartedTime', null=True)
 
@@ -47,9 +47,9 @@ class userSubject(models.Model):
 class dailySubject(models.Model):
     primaryKey = models.BigAutoField(verbose_name='pk', db_column='pk', primary_key=True)
     dateAndUser = models.ForeignKey("Daily", related_name='dateAndUser', db_column="dailyObject", on_delete=models.CASCADE)
-    title = models.CharField(default='기타', verbose_name='Subject Name', null=False, max_length=15)
-    color = models.CharField(default=cfg.DEFAULT_SUBJECT_COLOR, max_length=7, verbose_name="Subject's personal Color", null=False)
-    time = models.IntegerField(default=0, verbose_name="StudyTime - second", null=False)
+    title = models.CharField(default='기타', verbose_name='Subject Name', null=False, max_length=15, unique=False)
+    color = models.CharField(default=cfg.DEFAULT_SUBJECT_COLOR, max_length=7, verbose_name="Subject's personal Color", null=False, unique=False)
+    time = models.IntegerField(default=0, verbose_name="StudyTime - second", null=False, unique=False)
 
 
 class todoList(models.Model):
@@ -61,15 +61,15 @@ class todoList(models.Model):
 
 class Daily(models.Model):
     userInfo = models.ForeignKey("User", related_name='user_daily', on_delete=models.CASCADE, null=True, verbose_name='Information of Daily', db_column="userEmail")
-    date = models.DateField(default=now, verbose_name='Date', null=False, primary_key=True)
-    goal = models.IntegerField(default=0, verbose_name='Daily goal (sec)', blank=False, null=False)
+    date = models.DateField(default=now, verbose_name='Date', null=False, primary_key=True, unique=False)
+    goal = models.IntegerField(default=0, verbose_name='Daily goal (sec)', blank=False, null=False, unique=False)
     totalStudyTime = models.IntegerField(default=0, null=False)
     memo = models.TextField(default='', null=False)
 
 
 class emailAuth(models.Model):
     mail = models.EmailField(verbose_name='Mail Sender', max_length=255, unique=True, primary_key=True)
-    authCode = models.CharField(verbose_name='Auth', max_length=8)
+    authCode = models.CharField(verbose_name='Auth', max_length=8, unique=False)
     requestTime = models.DateTimeField(verbose_name='RequestedTime', default=timezone.now)
 
 

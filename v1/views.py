@@ -340,7 +340,10 @@ class getUserSubjectHistory(APIView):
                 return JsonResponse(BAD_REQUEST_400(message='invalid date given', data={}), status=400)
         except (KeyError, ValueError):
             _date = datetime.now()
-        daily = Daily.objects.get(userInfo=request.user, date=_date)
+        try:
+            daily = Daily.objects.get(userInfo=request.user, date=_date)
+        except ObjectDoesNotExist:
+            return JsonResponse(OK_200(data={"totalTime": 0, "subject": [], "goal": 0}))
         subjectHistory = dailySubject.objects.filter(dateAndUser=daily)
         subjectHistory = list(subjectHistory)
         returnValue = {"totalTime": 0, "subject": [], "goal": daily.goal}
@@ -413,8 +416,8 @@ class todoList_API(APIView):
                 _date = date(year, month, day)
             except (IndexError, TypeError):
                 return JsonResponse(BAD_REQUEST_400(message='invalid date given', data={}), status=400)
-            today = datetime.now()
-            if _date.year == today.year and _date.day == today.day:
+            today = datetime.now().date()
+            if _date is today:
                 isToday = True
             else:
                 isToday = False
@@ -588,8 +591,8 @@ class memo(APIView):
                 _date = date(year, month, day)
             except (IndexError, TypeError):
                 return JsonResponse(BAD_REQUEST_400(message='invalid date given', data={}), status=400)
-            today = datetime.now()
-            if _date.year == today.year and _date.day == today.day:
+            today = datetime.now().date()
+            if _date is today:
                 isToday = True
             else:
                 isToday = False
@@ -603,7 +606,7 @@ class memo(APIView):
         if isToday:
             try:
                 memoDate = Daily.objects.get(userInfo=request.user, date=_date)
-                memoDate.todo = str(memoContent)
+                memoDate.memo = str(memoContent)
                 memoDate.save()
                 return JsonResponse(OK_200(), status=200)
             except ObjectDoesNotExist:
@@ -611,7 +614,7 @@ class memo(APIView):
                     userInfo=request.user,
                     date=_date,
                     goal=request.user.targetTime,
-                    todo=str(memoContent)
+                    memo=str(memoContent)
                 )
                 memoDate.save()
                 return JsonResponse(OK_200(), status=200)
