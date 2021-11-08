@@ -288,14 +288,17 @@ class subject(APIView):
         except (KeyError, ValueError):
             return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
         try:
+            dailyObject = Daily.objects.get(userInfo=request.user, date=datetime.now().date())
+            subjectObject = dailySubject.objects.get(dateAndUser=dailyObject, title=subjTitle)
+            subjectObject.delete()
+        except ObjectDoesNotExist:
+            pass
+        try:
             subjectDB = userSubject.objects.get(user=request.user, title=subjTitle)
             subjectDB.delete()
             return JsonResponse(OK_200(data={}), status=200)
         except ObjectDoesNotExist:
             return JsonResponse(BAD_REQUEST_400(message="Subject "+subjTitle+" is not exists", data={}), status=400)
-        except Exception as E:
-            print(E)
-            return JsonResponse(CUSTOM_CODE(status=500, message='Unknown Server Error Accorded', data={}), status=500)
 
 
     def put(self, request):
@@ -305,6 +308,13 @@ class subject(APIView):
             subjectTitle = request.query_params['title']
         except (KeyError, ValueError):
             return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        dailyObjectFlag = False
+        try:
+            dailyObject = Daily.objects.get(userInfo=request.user, date=datetime.now().date())
+            subjectObject = dailySubject.objects.get(dateAndUser=dailyObject, title=subjectTitle)
+            dailyObjectFlag = True
+        except ObjectDoesNotExist:
+            pass
         try:
             subjectDB = userSubject.objects.get(user=request.user, title=subjectTitle)
         except ObjectDoesNotExist:
@@ -312,14 +322,20 @@ class subject(APIView):
         try:
             title_new = request.query_params['title_new']
             subjectDB.title = title_new
+            if dailyObjectFlag:
+                subjectObject.title = request.query_params['title_new']
         except (KeyError, ValueError):
             pass
         try:
             color_new = request.query_params['color']
             subjectDB.color = color_new
+            if dailyObjectFlag:
+                subjectObject.title = request.query_params['color']
         except (KeyError, ValueError):
             pass
         subjectDB.save()
+        if dailyObjectFlag:
+            subjectObject.save()
         return JsonResponse(OK_200(data={}))
 
 
@@ -338,21 +354,54 @@ class getUserSubjectHistory(APIView):
                 _date = date(year, month, day)
             except (IndexError, TypeError):
                 return JsonResponse(BAD_REQUEST_400(message='invalid date given', data={}), status=400)
+            today = datetime.now().date()
+            if _date == today:
+                isToday = True
+            else:
+                isToday = False
         except (KeyError, ValueError):
-            _date = datetime.now()
-        daily = Daily.objects.get(userInfo=request.user, date=_date)
-        subjectHistory = dailySubject.objects.filter(dateAndUser=daily)
+            _date = datetime.now().date()
+            isToday = True
+        if not isToday:
+            pass
+        else:
+            try:
+                userSubjectList = userSubject.objects.filter(user=request.user)
+            except ObjectDoesNotExist:
+                return JsonResponse(OK_200(data={"totalTime": 0, "subject": [], "goal": request.user.targetTime}))
+            try:
+                daily = Daily.objects.get(userInfo=request.user, date=_date)
+            except ObjectDoesNotExist:
+                daily = Daily(
+                    userInfo=request.user,
+                    goal=request.user.targetTime,
+                )
+                daily.save()
+            for userSubjectObject in userSubjectList:
+                try:
+                    _userSubject = dailySubject.objects.get(dateAndUser=daily, title=userSubjectObject.title)
+                except ObjectDoesNotExist:
+                    _userDailySubject = dailySubject(
+                        dateAndUser=daily,
+                        title=userSubjectObject.title,
+                        color=userSubjectObject.color
+                    )
+                    _userDailySubject.save()
+        try:
+            daily = Daily.objects.get(userInfo=request.user, date=_date)
+            subjectHistory = dailySubject.objects.filter(dateAndUser=daily)
+        except ObjectDoesNotExist:
+            return JsonResponse(OK_200(data={"totalTime": 0, "subject": [], "goal": 0}))
         subjectHistory = list(subjectHistory)
         returnValue = {"totalTime": 0, "subject": [], "goal": daily.goal}
         for _subjectHistory in subjectHistory:
-            if _subjectHistory.time:
-                returnValue["totalTime"] = returnValue["totalTime"] + _subjectHistory.time
-                subjectDict = {
-                    "title": _subjectHistory.title,
-                    "time": _subjectHistory.time,
-                    "color": _subjectHistory.color
-                }
-                returnValue["subject"].append(subjectDict)
+            returnValue["totalTime"] = returnValue["totalTime"] + _subjectHistory.time
+            subjectDict = {
+                "title": _subjectHistory.title,
+                "time": _subjectHistory.time,
+                "color": _subjectHistory.color
+            }
+            returnValue["subject"].append(subjectDict)
         return JsonResponse(OK_200(data=returnValue), status=200)
 
 
@@ -383,6 +432,10 @@ class targetTime(APIView):
             time = request.data['targetTime']
         except (KeyError, ValueError):
             return JsonResponse(BAD_REQUEST_400(message='Some Values are missing'), status=400)
+        try:
+            Daily.objects.get(userInfo=request.user, date=datetime.now().date()).save()
+        except ObjectDoesNotExist:
+            pass
         request.user.targetTime = int(time)
         request.user.save()
         return JsonResponse(OK_200(data={}), status=200)
@@ -413,8 +466,8 @@ class todoList_API(APIView):
                 _date = date(year, month, day)
             except (IndexError, TypeError):
                 return JsonResponse(BAD_REQUEST_400(message='invalid date given', data={}), status=400)
-            today = datetime.now()
-            if _date.year == today.year and _date.day == today.day:
+            today = datetime.now().date()
+            if _date == today:
                 isToday = True
             else:
                 isToday = False
@@ -588,8 +641,8 @@ class memo(APIView):
                 _date = date(year, month, day)
             except (IndexError, TypeError):
                 return JsonResponse(BAD_REQUEST_400(message='invalid date given', data={}), status=400)
-            today = datetime.now()
-            if _date.year == today.year and _date.day == today.day:
+            today = datetime.now().date()
+            if _date is today:
                 isToday = True
             else:
                 isToday = False
@@ -603,7 +656,7 @@ class memo(APIView):
         if isToday:
             try:
                 memoDate = Daily.objects.get(userInfo=request.user, date=_date)
-                memoDate.todo = str(memoContent)
+                memoDate.memo = str(memoContent)
                 memoDate.save()
                 return JsonResponse(OK_200(), status=200)
             except ObjectDoesNotExist:
@@ -611,7 +664,7 @@ class memo(APIView):
                     userInfo=request.user,
                     date=_date,
                     goal=request.user.targetTime,
-                    todo=str(memoContent)
+                    memo=str(memoContent)
                 )
                 memoDate.save()
                 return JsonResponse(OK_200(), status=200)
