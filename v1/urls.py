@@ -26,4 +26,5 @@ urlpatterns = [
     path('user/data/post/', views.postAPI.as_view(), name='index'),
     path('user/data/post/comment/', views.postCommentAPI.as_view(), name='index'),
     path('user/data/post/like/', views.postLikeAPI.as_view(), name='index'),
+    path('user/data/rank/', views.rankAPI.as_view(), name='index'),
 ]
