@@ -193,8 +193,8 @@ class getStatsOfPeriod(APIView):
         try:
             _dateStart = request.data['startDate']
             _dateEnd = request.data['endDate']
-            _dateStart = _dateStart.split('-')
-            _dateEnd = _dateEnd.split('-')
+            _dateStart = _dateStart.split('.') if _dateStart.count('.') else _dateStart.split('-')
+            _dateEnd = _dateEnd.split('.') if _dateEnd.count('.') else _dateEnd.split('-')
             try:
                 year = int(_dateStart[0])
                 month = int(_dateStart[1])
