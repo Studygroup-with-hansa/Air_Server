@@ -955,11 +955,11 @@ class postAPI(APIView):
         if not request.user.is_authenticated or request.user.is_anonymous:
             return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
         try:
-            _dateStart = request.data['startDate']
-            _dateEnd = request.data['endDate']
-            calendarType = request.data['calendarType']
-            _dateStart = _dateStart.split('-')
-            _dateEnd = _dateEnd.split('-')
+            _dateStart = request.query_params['startDate']
+            _dateEnd = request.query_params['endDate']
+            calendarType = request.query_params['calendarType']
+            _dateStart = _dateStart.split('.') if _dateStart.count('.') else _dateStart.split('-')
+            _dateEnd = _dateEnd.split('.') if _dateEnd.count('.') else _dateEnd.split('-')
             try:
                 year = int(_dateStart[0])
                 month = int(_dateStart[1])
@@ -1012,7 +1012,7 @@ class postAPI(APIView):
                 return JsonResponse(BAD_REQUEST_400(message='No Exiting Post', data={}), status=400)
         except (KeyError, ValueError):
             pkExists = False
-            postObjects = post.objects.get().order_by('postTime')
+            postObjects = post.objects.all().order_by('postTime')
         returnValue = {}
         if not pkExists:
             returnValue = {"count": 0, "post": []}
@@ -1054,7 +1054,7 @@ class postAPI(APIView):
                 returnValue = {
                     "username": postObject.author.username,
                     "userImage": postObject.author.profileImgURL,
-                    "postDate": postObject.postTime.day().strftime("%Y-%m-%d"),
+                    "postDate": postObject.postTime.strftime("%Y-%m-%d"),
                     "startDate": postObject.startDate.strftime("%Y-%m-%d"),
                     "endDate": postObject.endDate.strftime("%Y-%m-%d"),
                     "achievementRate": achievement,
@@ -1070,7 +1070,7 @@ class postAPI(APIView):
                 subjectDict = {
                     "username": postObject.author.username,
                     "userImage": postObject.author.profileImgURL,
-                    "postDate": postObject.postTime.day().strftime("%Y-%m-%d"),
+                    "postDate": postObject.postTime.strftime("%Y-%m-%d"),
                     "startDate": postObject.startDate.strftime("%Y-%m-%d"),
                     "endDate": postObject.endDate.strftime("%Y-%m-%d"),
                     "achievementRate": achievement,
@@ -1267,3 +1267,21 @@ class rankAPI(APIView):
             "achievementRate": []
         }
         return JsonResponse(OK_200(data=returnData), status=200)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class init_all_targetTime(APIView):
+    def post(self, request):
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        if (not request.user.is_superuser) and (not request.user.is_staff):
+            return JsonResponse(CUSTOM_CODE(status=401, message='Not Staff User', data={}), status=200)
+        try:
+            users = User.objects.all()
+        except ObjectDoesNotExist:
+            return JsonResponse(OK_200(data={}), status=200)
+        for user in users:
+            user.targetTime = 0
+            user.save()
+        return JsonResponse(OK_200(data={}), status=200)
+
