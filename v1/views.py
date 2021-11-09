@@ -1015,7 +1015,7 @@ class postAPI(APIView):
             postObjects = post.objects.get().order_by('postTime')
         returnValue = {}
         if not pkExists:
-            returnValue = {"post": []}
+            returnValue = {"count": 0, "post": []}
         for postObject in postObjects:
             _dateStart = postObject.startDate
             _dateEnd = postObject.endDate
@@ -1078,6 +1078,7 @@ class postAPI(APIView):
                     "like": likeCount,
                     "idx": postObject.primaryKey
                 }
+                returnValue["count"] += 1
                 returnValue["post"].append(subjectDict)
         return JsonResponse(OK_200(data=returnValue), status=200)
 
@@ -1132,7 +1133,7 @@ class postCommentAPI(APIView):
             postObject = post.objects.get(primaryKey=postPK)
         except ObjectDoesNotExist:
             return JsonResponse(BAD_REQUEST_400(message='No Exiting post', data={}), status=400)
-        returnValue = {"comments": []}
+        returnValue = {"count": 0, "comments": []}
         try:
             commentObjects = comment.objects.filter(post=postObject)
         except ObjectDoesNotExist:
@@ -1147,6 +1148,7 @@ class postCommentAPI(APIView):
                 "content": commentObject.content,
                 "idx": commentObject.primaryKey
             }
+            returnValue["count"] += 1
             returnValue["comments"].append(commentDataForm)
         return JsonResponse(OK_200(data=returnValue), status=200)
 
@@ -1209,12 +1211,14 @@ class rankAPI(APIView):
             return JsonResponse(OK_200(data={"rank": []}), status=200)
         userDailyObjects = list(userDailyObjects)
         returnData = {
+            "myInfo": {},
             "rank": []
         }
         for userDailySubject in userDailyObjects:
             userForm = {
-                "rank": 0,
+                "rank": '0',
                 "username": userDailySubject.userInfo.username,
+                "usermail": userDailySubject.userInfo.email,
                 "totalStudyTime": 0,
                 "achievementRate": []
             }
@@ -1253,4 +1257,13 @@ class rankAPI(APIView):
         for user in range(len(returnData["rank"])):
             returnData["rank"][rank-1]["rank"] = str(rank)
             rank += 1
+        myInfo = (item for item in returnData["rank"] if item["usermail"] == request.user.email)
+        myInfo = next(myInfo, False)
+        returnData["myInfo"] = myInfo if myInfo else {
+            "rank": '-',
+            "username": request.user.username,
+            "usermail": request.user.email,
+            "totalStudyTime": 0,
+            "achievementRate": []
+        }
         return JsonResponse(OK_200(data=returnData), status=200)
