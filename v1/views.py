@@ -644,7 +644,7 @@ class memo(APIView):
             except (IndexError, TypeError):
                 return JsonResponse(BAD_REQUEST_400(message='invalid date given', data={}), status=400)
             today = datetime.now().date()
-            if _date is today:
+            if _date == today:
                 isToday = True
             else:
                 isToday = False
@@ -1198,3 +1198,55 @@ class postLikeAPI(APIView):
             }
             returnValue["user"].append(likeDataForm)
         return JsonResponse(OK_200(data=returnValue), status=200)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class rankAPI(APIView):
+    def get(self, request):
+        try:
+            userDailyObjects = Daily.objects.filter(date=datetime.now().date()).order_by('totalStudyTime')
+        except ObjectDoesNotExist:
+            return JsonResponse(OK_200(data={"rank": []}), status=200)
+        userDailyObjects = list(userDailyObjects)
+        returnData = {
+            "rank": []
+        }
+        rank = 1
+        for userDailySubject in userDailyObjects:
+            userForm = {
+                "rank": rank,
+                "username": userDailySubject.userInfo.username,
+                "totalStudyTime": userDailySubject.totalStudyTime,
+                "achievementRate": []
+            }
+            rank += 1
+            _dateStart = datetime.now().date() - timedelta(days=7)
+            _dateEnd = datetime.now().date()
+            stepDate = _dateStart
+            while stepDate <= _dateEnd:
+                dailyAchievement = 0
+                dailyStudyTime = 0
+                try:
+                    dateObject = Daily.objects.get(userInfo=userDailySubject.userInfo, date=stepDate)
+                    dailyGoal = dateObject.goal
+                except ObjectDoesNotExist:
+                    userForm["achievementRate"].append(dailyAchievement)
+                    stepDate += timedelta(days=1)
+                    continue
+                subjectObjects = dailySubject.objects.filter(dateAndUser=dateObject)
+                subjectObjects = list(subjectObjects)
+                if not subjectObjects.__len__():
+                    userForm["achievementRate"].append(dailyAchievement)
+                    stepDate += timedelta(days=1)
+                    continue
+                else:
+                    for _subject in subjectObjects:
+                        dailyStudyTime += _subject.time
+                    try:
+                        dailyAchievement = int(dailyStudyTime / dailyGoal * 100)
+                    except ZeroDivisionError:
+                        pass
+                    userForm["achievementRate"].append(dailyAchievement)
+                stepDate += timedelta(days=1)
+            returnData["rank"].append(userForm)
+        return JsonResponse(OK_200(data=returnData), status=200)
