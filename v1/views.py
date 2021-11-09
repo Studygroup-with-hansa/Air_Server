@@ -1204,23 +1204,21 @@ class postLikeAPI(APIView):
 class rankAPI(APIView):
     def get(self, request):
         try:
-            userDailyObjects = Daily.objects.filter(date=datetime.now().date()).order_by('totalStudyTime')
+            userDailyObjects = Daily.objects.filter(date=datetime.now().date())
         except ObjectDoesNotExist:
             return JsonResponse(OK_200(data={"rank": []}), status=200)
         userDailyObjects = list(userDailyObjects)
         returnData = {
             "rank": []
         }
-        rank = 1
         for userDailySubject in userDailyObjects:
             userForm = {
-                "rank": rank,
+                "rank": 0,
                 "username": userDailySubject.userInfo.username,
-                "totalStudyTime": userDailySubject.totalStudyTime,
+                "totalStudyTime": 0,
                 "achievementRate": []
             }
-            rank += 1
-            _dateStart = datetime.now().date() - timedelta(days=7)
+            _dateStart = datetime.now().date() - timedelta(days=6)
             _dateEnd = datetime.now().date()
             stepDate = _dateStart
             while stepDate <= _dateEnd:
@@ -1243,10 +1241,16 @@ class rankAPI(APIView):
                     for _subject in subjectObjects:
                         dailyStudyTime += _subject.time
                     try:
+                        userForm["totalStudyTime"] += dailyStudyTime
                         dailyAchievement = int(dailyStudyTime / dailyGoal * 100)
                     except ZeroDivisionError:
                         pass
                     userForm["achievementRate"].append(dailyAchievement)
                 stepDate += timedelta(days=1)
             returnData["rank"].append(userForm)
+        returnData["rank"] = sorted(returnData["rank"], key=itemgetter('totalStudyTime'), reverse=True)
+        rank = 1
+        for user in range(len(returnData["rank"])):
+            returnData["rank"][rank-1]["rank"] = str(rank)
+            rank += 1
         return JsonResponse(OK_200(data=returnData), status=200)
