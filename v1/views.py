@@ -6,6 +6,7 @@ from .services.returnStatusForm import *
 from .services.randomCharCreator import createRandomChar as randCode
 from .services.sendSMTP import send
 from datetime import datetime, timedelta, date
+from .config import config
 
 from django.db.models import Q
 from django.http import QueryDict
@@ -1285,3 +1286,17 @@ class init_all_targetTime(APIView):
             user.save()
         return JsonResponse(OK_200(data={}), status=200)
 
+
+@method_decorator(csrf_exempt, name='dispatch')
+class setProfileIMG(APIView):
+    def post(self, request):
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        image = request.FILES['image']
+        request.user.profileImgURL = image
+        request.user.save()
+        return JsonResponse(OK_200(), status=200)
+
+    def get(self, request):
+        img = request.user.profileImgURL
+        return JsonResponse(OK_200(data={"profileImg": img.url}), status=200)

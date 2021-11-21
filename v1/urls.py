@@ -27,5 +27,6 @@ urlpatterns = [
     path('user/data/post/comment/', views.postCommentAPI.as_view(), name='index'),
     path('user/data/post/like/', views.postLikeAPI.as_view(), name='index'),
     path('user/data/rank/', views.rankAPI.as_view(), name='index'),
-    path('admin/data/init/targetTime/', views.init_all_targetTime.as_view(), name='index')
+    path('admin/data/init/targetTime/', views.init_all_targetTime.as_view(), name='index'),
+    path('user/data/manage/basic/image/', views.setProfileIMG.as_view(), name='index')
 ]
