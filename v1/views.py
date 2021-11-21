@@ -6,6 +6,7 @@ from .services.returnStatusForm import *
 from .services.randomCharCreator import createRandomChar as randCode
 from .services.sendSMTP import send
 from datetime import datetime, timedelta, date
+from .config import config
 
 from django.db.models import Q
 from django.http import QueryDict
@@ -193,8 +194,8 @@ class getStatsOfPeriod(APIView):
         try:
             _dateStart = request.data['startDate']
             _dateEnd = request.data['endDate']
-            _dateStart = _dateStart.split('-')
-            _dateEnd = _dateEnd.split('-')
+            _dateStart = _dateStart.split('.') if _dateStart.count('.') else _dateStart.split('-')
+            _dateEnd = _dateEnd.split('.') if _dateEnd.count('.') else _dateEnd.split('-')
             try:
                 year = int(_dateStart[0])
                 month = int(_dateStart[1])
@@ -955,11 +956,11 @@ class postAPI(APIView):
         if not request.user.is_authenticated or request.user.is_anonymous:
             return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
         try:
-            _dateStart = request.data['startDate']
-            _dateEnd = request.data['endDate']
-            calendarType = request.data['calendarType']
-            _dateStart = _dateStart.split('-')
-            _dateEnd = _dateEnd.split('-')
+            _dateStart = request.query_params['startDate']
+            _dateEnd = request.query_params['endDate']
+            calendarType = request.query_params['calendarType']
+            _dateStart = _dateStart.split('.') if _dateStart.count('.') else _dateStart.split('-')
+            _dateEnd = _dateEnd.split('.') if _dateEnd.count('.') else _dateEnd.split('-')
             try:
                 year = int(_dateStart[0])
                 month = int(_dateStart[1])
@@ -1012,10 +1013,10 @@ class postAPI(APIView):
                 return JsonResponse(BAD_REQUEST_400(message='No Exiting Post', data={}), status=400)
         except (KeyError, ValueError):
             pkExists = False
-            postObjects = post.objects.get().order_by('postTime')
+            postObjects = post.objects.all().order_by('postTime')
         returnValue = {}
         if not pkExists:
-            returnValue = {"post": []}
+            returnValue = {"count": 0, "post": []}
         for postObject in postObjects:
             _dateStart = postObject.startDate
             _dateEnd = postObject.endDate
@@ -1054,7 +1055,7 @@ class postAPI(APIView):
                 returnValue = {
                     "username": postObject.author.username,
                     "userImage": postObject.author.profileImgURL,
-                    "postDate": postObject.postTime.day().strftime("%Y-%m-%d"),
+                    "postDate": postObject.postTime.strftime("%Y-%m-%d"),
                     "startDate": postObject.startDate.strftime("%Y-%m-%d"),
                     "endDate": postObject.endDate.strftime("%Y-%m-%d"),
                     "achievementRate": achievement,
@@ -1070,7 +1071,7 @@ class postAPI(APIView):
                 subjectDict = {
                     "username": postObject.author.username,
                     "userImage": postObject.author.profileImgURL,
-                    "postDate": postObject.postTime.day().strftime("%Y-%m-%d"),
+                    "postDate": postObject.postTime.strftime("%Y-%m-%d"),
                     "startDate": postObject.startDate.strftime("%Y-%m-%d"),
                     "endDate": postObject.endDate.strftime("%Y-%m-%d"),
                     "achievementRate": achievement,
@@ -1078,6 +1079,7 @@ class postAPI(APIView):
                     "like": likeCount,
                     "idx": postObject.primaryKey
                 }
+                returnValue["count"] += 1
                 returnValue["post"].append(subjectDict)
         return JsonResponse(OK_200(data=returnValue), status=200)
 
@@ -1132,7 +1134,7 @@ class postCommentAPI(APIView):
             postObject = post.objects.get(primaryKey=postPK)
         except ObjectDoesNotExist:
             return JsonResponse(BAD_REQUEST_400(message='No Exiting post', data={}), status=400)
-        returnValue = {"comments": []}
+        returnValue = {"count": 0, "comments": []}
         try:
             commentObjects = comment.objects.filter(post=postObject)
         except ObjectDoesNotExist:
@@ -1147,6 +1149,7 @@ class postCommentAPI(APIView):
                 "content": commentObject.content,
                 "idx": commentObject.primaryKey
             }
+            returnValue["count"] += 1
             returnValue["comments"].append(commentDataForm)
         return JsonResponse(OK_200(data=returnValue), status=200)
 
@@ -1204,23 +1207,23 @@ class postLikeAPI(APIView):
 class rankAPI(APIView):
     def get(self, request):
         try:
-            userDailyObjects = Daily.objects.filter(date=datetime.now().date()).order_by('totalStudyTime')
+            userDailyObjects = Daily.objects.filter(date=datetime.now().date())
         except ObjectDoesNotExist:
             return JsonResponse(OK_200(data={"rank": []}), status=200)
         userDailyObjects = list(userDailyObjects)
         returnData = {
+            "myInfo": {},
             "rank": []
         }
-        rank = 1
         for userDailySubject in userDailyObjects:
             userForm = {
-                "rank": rank,
+                "rank": '0',
                 "username": userDailySubject.userInfo.username,
-                "totalStudyTime": userDailySubject.totalStudyTime,
+                "usermail": userDailySubject.userInfo.email,
+                "totalStudyTime": 0,
                 "achievementRate": []
             }
-            rank += 1
-            _dateStart = datetime.now().date() - timedelta(days=7)
+            _dateStart = datetime.now().date() - timedelta(days=6)
             _dateEnd = datetime.now().date()
             stepDate = _dateStart
             while stepDate <= _dateEnd:
@@ -1243,10 +1246,57 @@ class rankAPI(APIView):
                     for _subject in subjectObjects:
                         dailyStudyTime += _subject.time
                     try:
+                        userForm["totalStudyTime"] += dailyStudyTime
                         dailyAchievement = int(dailyStudyTime / dailyGoal * 100)
                     except ZeroDivisionError:
                         pass
                     userForm["achievementRate"].append(dailyAchievement)
                 stepDate += timedelta(days=1)
             returnData["rank"].append(userForm)
+        returnData["rank"] = sorted(returnData["rank"], key=itemgetter('totalStudyTime'), reverse=True)
+        rank = 1
+        for user in range(len(returnData["rank"])):
+            returnData["rank"][rank-1]["rank"] = str(rank)
+            rank += 1
+        myInfo = (item for item in returnData["rank"] if item["usermail"] == request.user.email)
+        myInfo = next(myInfo, False)
+        returnData["myInfo"] = myInfo if myInfo else {
+            "rank": '-',
+            "username": request.user.username,
+            "usermail": request.user.email,
+            "totalStudyTime": 0,
+            "achievementRate": []
+        }
         return JsonResponse(OK_200(data=returnData), status=200)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class init_all_targetTime(APIView):
+    def post(self, request):
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        if (not request.user.is_superuser) and (not request.user.is_staff):
+            return JsonResponse(CUSTOM_CODE(status=401, message='Not Staff User', data={}), status=200)
+        try:
+            users = User.objects.all()
+        except ObjectDoesNotExist:
+            return JsonResponse(OK_200(data={}), status=200)
+        for user in users:
+            user.targetTime = 0
+            user.save()
+        return JsonResponse(OK_200(data={}), status=200)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class setProfileIMG(APIView):
+    def post(self, request):
+        if not request.user.is_authenticated or request.user.is_anonymous:
+            return JsonResponse(BAD_REQUEST_400(message='Some Values are missing', data={}), status=400)
+        image = request.FILES['image']
+        request.user.profileImgURL = image
+        request.user.save()
+        return JsonResponse(OK_200(), status=200)
+
+    def get(self, request):
+        img = request.user.profileImgURL
+        return JsonResponse(OK_200(data={"profileImg": img.url}), status=200)

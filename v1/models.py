@@ -81,7 +81,7 @@ class User(AbstractUser):
     style = models.CharField(max_length=10, verbose_name='user\'s style', null=True)
     email = models.EmailField(verbose_name='email', max_length=255, unique=True, primary_key=False)
     username = models.CharField(max_length=8, verbose_name='user name', default='익명', null=False)
-    profileImgURL = models.URLField(verbose_name='profile Image URL', default=cfg.DEFAULT_PROFILE_IMG)
+    profileImgURL = models.ImageField(verbose_name='profile Image', upload_to='v1', null=True, default='v1/default/profile.jpg')
     is_active = models.BooleanField(default=True)
     passwd = models.CharField(verbose_name='tempUserPasswd', max_length=100)
 
